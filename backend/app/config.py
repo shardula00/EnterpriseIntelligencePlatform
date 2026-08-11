@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     upload_storage_dir: Path = _DEFAULT_UPLOAD_STORAGE_DIR
     max_upload_size_mb: int = 50
 
+    # Frontend (Phase 3). The Vite dev server runs on a different origin
+    # than the API, so the browser needs an explicit CORS allow-list rather
+    # than a wildcard.
+    cors_allow_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+
 
 @lru_cache
 def get_settings() -> Settings:

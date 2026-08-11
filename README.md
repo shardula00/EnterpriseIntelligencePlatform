@@ -70,10 +70,10 @@ Full reasoning, component responsibilities, and data flow are in
 
 | Phase | Focus |
 |---|---|
-| 0 | Project foundation — docs, repo skeleton (**current**) |
+| 0 | Project foundation — docs, repo skeleton |
 | 1 | Local infra & backend skeleton — Docker Compose, Postgres/pgvector, FastAPI, CI |
 | 2 | Data platform — ingestion, schema detection, profiling, quality, lineage |
-| 3 | BI layer — KPI engine, React/Vite/Tailwind dashboards |
+| 3 | BI layer — KPI engine, React/Vite/Tailwind dashboards (**current**) |
 | 4 | Auth & RBAC — users, roles, permissions, audit log |
 | 5 | Classical ML — churn, forecasting, segmentation, anomaly detection, MLflow |
 | 6 | MLOps hardening — monitoring, drift detection, serving |
@@ -128,17 +128,22 @@ EnterpriseIntelligencePlatform/
 ├── DEVELOPMENT_PLAN.md      — phased implementation plan
 ├── .gitignore
 ├── .python-version          — pins Python 3.12 for the backend/ML environment
-├── backend/                 — placeholder; FastAPI app arrives Phase 1
-├── frontend/                — placeholder; React app arrives Phase 3
+├── backend/                 — FastAPI app: ingestion pipeline (Phase 2), KPI engine (Phase 3)
+├── frontend/                — React + TS + Vite + Tailwind app (Phase 3)
 ├── data/                    — local dataset working area (gitignored contents)
-├── infra/                   — placeholder; docker-compose.yml arrives Phase 1
+├── infra/                   — docker-compose.yml (Postgres + pgvector)
 └── docs/                    — ADRs and diagrams as they accumulate
 ```
 
 ## Status
 
-**Phase 0 — Project Foundation.** Repository skeleton and planning documents
-only. No application code has been written yet. See
+**Phase 3 — Business Intelligence Layer & Frontend Introduction.** A working
+end-to-end system: upload a CSV/Excel/JSON file through the React frontend,
+watch it get validated, schema-detected, profiled, quality-scored, and
+loaded into Postgres by the backend (Phase 2), then explore its schema,
+quality report, data preview, lineage, and a generic KPI dashboard
+(stat tiles, breakdown chart, trend chart) — all in the browser, against
+real data, with no hardcoded business schema. See
 [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) for what comes next.
 
 ## Local development principles

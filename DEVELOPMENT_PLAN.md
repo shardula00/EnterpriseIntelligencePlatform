@@ -119,6 +119,36 @@ frontend rendering configurable KPIs and dashboards from real ingested data.
 reflected in configurable KPI dashboards in the browser, with both backend
 and frontend tests passing.
 
+**Implementation notes (decided during Phase 3, not in the original plan):**
+- **KPI "definitions" are derived from column metadata, not hand-picked
+  per business domain**: every numeric column gets sum/average/min/max
+  tiles; every low-cardinality text/boolean column becomes a breakdown
+  candidate; every datetime column becomes a trend candidate. A candidate
+  must also group *multiple* rows on average (distinct_count roughly
+  ≤ row_count/2) - a column with one distinct value per row (e.g. a name
+  column) clears a naive cardinality cap but produces a meaningless
+  "breakdown," so that's excluded even though it's technically low enough
+  cardinality on an absolute scale.
+- **No new database schema.** KPIs are computed live via SQL against a
+  dataset's existing physical table (reusing `ingestion.table_builder`);
+  nothing new is persisted.
+- **CORS added to the backend** (`Settings.cors_allow_origins`, allow-listed
+  local dev origins only) - the one backend change made purely to support
+  the frontend, not a new feature in its own right.
+- **Typed API client generated from the real OpenAPI schema**
+  (`openapi-typescript` + `openapi-fetch`), regenerated via
+  `npm run generate:api` whenever backend routes/models change - not
+  hand-maintained types that can silently drift from what the API returns.
+- Two frontend dependencies beyond the plan's named stack, both narrowly
+  justified: `react-router-dom` (multi-screen navigation) and `recharts`
+  (the "interactive charts" the plan calls for). No data-fetching/caching
+  library (e.g. React Query) - a small custom hook (`useAsync`) covers
+  loading/success/error state at this scale.
+- End-to-end verified with a real headless-browser walkthrough (upload →
+  list → all five detail tabs) against the live backend, not just API
+  curl calls and mocked component tests - see the Phase 3 completion
+  report for what was checked.
+
 ---
 
 ## Phase 4 — Authentication & RBAC
