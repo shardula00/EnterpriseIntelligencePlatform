@@ -1,6 +1,14 @@
 import { useState } from 'react'
 import { getBreakdown, getKpiSummary, getTrend } from '../../../api/client'
 import type { Breakdown, KpiSummary, Trend } from '../../../api/types'
+import { useAsync } from '../../../hooks/useAsync'
+import { usePermission } from '../../../hooks/usePermission'
+import { LoadingSpinner } from '../../common/LoadingSpinner'
+import { ErrorMessage } from '../../common/ErrorMessage'
+import { EmptyState } from '../../common/EmptyState'
+import { StatTile } from './StatTile'
+import { BreakdownChart } from './BreakdownChart'
+import { TrendChart } from './TrendChart'
 
 const EMPTY_BREAKDOWN: Breakdown = {
   dataset_id: '',
@@ -19,13 +27,6 @@ const EMPTY_TREND: Trend = {
   aggregation: 'sum',
   points: [],
 }
-import { LoadingSpinner } from '../../common/LoadingSpinner'
-import { ErrorMessage } from '../../common/ErrorMessage'
-import { EmptyState } from '../../common/EmptyState'
-import { StatTile } from './StatTile'
-import { BreakdownChart } from './BreakdownChart'
-import { TrendChart } from './TrendChart'
-import { useAsync } from '../../../hooks/useAsync'
 
 const AGGREGATIONS = ['sum', 'average', 'count', 'min', 'max']
 const GRANULARITIES = ['day', 'week', 'month']
@@ -187,6 +188,10 @@ function Select({
 
 export function KpiDashboard({ datasetId }: { datasetId: string }) {
   const result = useAsync(() => getKpiSummary(datasetId), [datasetId])
+  // UX only - /kpis/breakdown and /kpis/trend independently require
+  // dashboard:configure server-side regardless of whether these sections
+  // are shown (see backend/app/api/kpis.py).
+  const canConfigure = usePermission('dashboard:configure')
 
   if (result.status === 'loading') return <LoadingSpinner label="Loading KPIs…" />
   if (result.status === 'error') return <ErrorMessage message={result.error} onRetry={result.reload} />
@@ -209,8 +214,17 @@ export function KpiDashboard({ datasetId }: { datasetId: string }) {
         </div>
       )}
 
-      <BreakdownSection datasetId={datasetId} summary={summary} />
-      <TrendSection datasetId={datasetId} summary={summary} />
+      {canConfigure ? (
+        <>
+          <BreakdownSection datasetId={datasetId} summary={summary} />
+          <TrendSection datasetId={datasetId} summary={summary} />
+        </>
+      ) : (
+        <EmptyState
+          title="Breakdown and trend charts require Analyst or Admin access"
+          description="Ask an admin to upgrade your role to view interactive breakdown/trend charts."
+        />
+      )}
     </div>
   )
 }

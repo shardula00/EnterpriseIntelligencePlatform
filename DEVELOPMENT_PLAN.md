@@ -167,6 +167,57 @@ and frontend tests passing.
 **Definition of done:** Unauthenticated requests are rejected; role-gated
 endpoints correctly allow/deny based on role; audit log records key actions.
 
+**Implementation notes (decided during Phase 4, not in the original plan):**
+- **Three separate backend concerns, three packages**: `app/auth/`
+  (identity - registration, login, password hashing, JWT), `app/rbac/`
+  (authorization - roles, permissions, `require_permission(...)`), `app/audit/`
+  (event recording/querying). Identity and authorization are deliberately
+  decoupled: a JWT only proves *who*, never *what they can do* - permissions
+  are re-resolved from the database on every request via
+  `rbac.service.effective_permissions()`, never cached in the token.
+- **JWT claims are minimal by design**: `sub` (user id), `tv` (token
+  version), `iat`, `exp` - no email, name, roles, or permissions. Two
+  reasons: a JWT is base64, not encrypted, so anything in it is readable by
+  whoever holds it; and roles/permissions can change between issuance and
+  use, so baking them in would let a revoked permission keep working until
+  natural expiry.
+- **No refresh tokens.** A single 60-minute access token, and revocation is
+  via `User.token_version`: logout and admin-deactivation both increment it,
+  and `get_current_user` rejects any token whose `tv` claim doesn't match
+  the user's current value. Tradeoff accepted: this invalidates *every*
+  active session for that user, not just the one that logged out - judged
+  an acceptable simplicity/security tradeoff at this scale, not something a
+  multi-device product would want.
+- **Self-privilege-escalation is blocked by a blanket rule, not a
+  case-by-case check**: an admin cannot change their own role assignment or
+  active status via the admin API at all (not "cannot increase" - cannot
+  change), which is simpler to reason about and impossible to get wrong at
+  the boundary.
+- **Registration always grants VIEWER**, never anything higher - the only
+  way to get ANALYST/ADMIN is an existing admin granting it. This is what
+  makes open self-registration safe to leave on.
+- **Login failure messages never distinguish "wrong password" from
+  "no such email"** (same exception, same HTTP response) - the standard
+  account-enumeration mitigation. Registration *does* say "email already
+  exists," which is normal and expected at signup (the alternative is a
+  broken-feeling signup form) and not treated as the same enumeration risk.
+- **Frontend token storage: localStorage, not an httpOnly cookie** -
+  documented as a deliberate portfolio-scale tradeoff (XSS-exposed, but
+  short-lived, no refresh token, no HTML rendered from user input anywhere
+  in the app) rather than building cookie+CSRF machinery this phase. See
+  `frontend/src/auth/tokenStorage.ts` and `frontend/README.md`.
+- **Backend authorization is what's tested for 401/403, not frontend
+  hiding** - every RBAC test hits the real HTTP API directly; the frontend's
+  `usePermission()`-based hiding (delete buttons, admin nav links,
+  dashboard-configure controls) is UX only and is explicitly verified in
+  the E2E pass to be backed by an independent server-side rejection, not a
+  substitute for one.
+- Existing Phase 2/3 tests needed zero content changes: the `client` test
+  fixture became admin-authenticated by default (see `tests/conftest.py`),
+  so every pre-Phase-4 integration test kept working unmodified while new,
+  dedicated tests in `tests/auth/`, `tests/rbac/`, `tests/audit/` cover the
+  permission boundaries themselves.
+
 ---
 
 ## Phase 5 — Classical Machine Learning

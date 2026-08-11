@@ -1,6 +1,11 @@
 """KPI API: generic aggregate/breakdown/trend computation over a dataset.
 
 Thin HTTP layer only - all computation lives in app/bi/service.py.
+
+Permission split (Phase 4): the plain summary (stat tiles) only needs
+dashboard:read, but choosing breakdown/trend parameters is treated as
+"configuring" the dashboard and needs dashboard:configure - see
+ARCHITECTURE.md for the reasoning.
 """
 
 from uuid import UUID
@@ -20,12 +25,18 @@ from app.bi.schemas import (
 )
 from app.db import get_db
 from app.ingestion.errors import DatasetNotFoundError
+from app.models.user import User
+from app.rbac.dependencies import require_permission
 
 router = APIRouter(prefix="/datasets", tags=["kpis"])
 
 
 @router.get("/{dataset_id}/kpis", response_model=KpiSummaryOut)
-def get_kpi_summary(dataset_id: UUID, db: Session = Depends(get_db)) -> KpiSummaryOut:
+def get_kpi_summary(
+    dataset_id: UUID,
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(require_permission("dashboard:read")),
+) -> KpiSummaryOut:
     try:
         summary = service.get_kpi_summary(db, dataset_id)
     except DatasetNotFoundError as exc:
@@ -47,6 +58,7 @@ def get_breakdown(
     metric: str | None = None,
     agg: str = "sum",
     db: Session = Depends(get_db),
+    _current_user: User = Depends(require_permission("dashboard:configure")),
 ) -> BreakdownOut:
     try:
         result = service.get_breakdown(db, dataset_id, group_by, metric, agg)
@@ -73,6 +85,7 @@ def get_trend(
     granularity: str = "month",
     agg: str = "sum",
     db: Session = Depends(get_db),
+    _current_user: User = Depends(require_permission("dashboard:configure")),
 ) -> TrendOut:
     try:
         result = service.get_trend(db, dataset_id, date_column, metric, granularity, agg)

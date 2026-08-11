@@ -1,9 +1,13 @@
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { DatasetList } from './DatasetList'
 import type { DatasetSummary } from '../../api/types'
+import * as apiClient from '../../api/client'
+import { renderWithProviders } from '../../test/renderWithProviders'
+import { fakeUser, setFakeToken, VIEWER_PERMISSIONS } from '../../test/authTestUtils'
+
+vi.mock('../../api/client')
 
 const sample: DatasetSummary = {
   id: 'ds-1',
@@ -19,30 +23,43 @@ const sample: DatasetSummary = {
   created_at: '2026-01-01T00:00:00Z',
 }
 
-function renderWithRouter(ui: React.ReactElement) {
-  return render(<MemoryRouter>{ui}</MemoryRouter>)
-}
+beforeEach(() => {
+  setFakeToken()
+  vi.mocked(apiClient.authMe).mockResolvedValue(fakeUser())
+})
 
 describe('DatasetList', () => {
-  it('shows an empty state when there are no datasets', () => {
-    renderWithRouter(<DatasetList datasets={[]} onDelete={vi.fn()} />)
-    expect(screen.getByText('No datasets yet')).toBeInTheDocument()
+  it('shows an empty state when there are no datasets', async () => {
+    renderWithProviders(<DatasetList datasets={[]} onDelete={vi.fn()} />)
+    expect(await screen.findByText('No datasets yet')).toBeInTheDocument()
   })
 
-  it('renders a row per dataset with its real quality score', () => {
-    renderWithRouter(<DatasetList datasets={[sample]} onDelete={vi.fn()} />)
+  it('renders a row per dataset with its real quality score', async () => {
+    renderWithProviders(<DatasetList datasets={[sample]} onDelete={vi.fn()} />)
 
-    expect(screen.getByText('orders_sample')).toBeInTheDocument()
+    expect(await screen.findByText('orders_sample')).toBeInTheDocument()
     expect(screen.getByText('20')).toBeInTheDocument()
     expect(screen.getByText(/100\.0/)).toBeInTheDocument()
   })
 
-  it('calls onDelete with the dataset when Delete is clicked', async () => {
+  it('calls onDelete with the dataset when Delete is clicked (Admin, has dataset:delete)', async () => {
     const onDelete = vi.fn()
-    renderWithRouter(<DatasetList datasets={[sample]} onDelete={onDelete} />)
+    renderWithProviders(<DatasetList datasets={[sample]} onDelete={onDelete} />)
 
-    await userEvent.click(screen.getByRole('button', { name: /delete/i }))
+    const deleteButton = await screen.findByRole('button', { name: /delete/i })
+    await userEvent.click(deleteButton)
 
     expect(onDelete).toHaveBeenCalledWith(sample)
+  })
+
+  it('hides the Delete button for a Viewer (no dataset:delete permission)', async () => {
+    vi.mocked(apiClient.authMe).mockResolvedValue(
+      fakeUser({ roles: ['VIEWER'], permissions: VIEWER_PERMISSIONS }),
+    )
+
+    renderWithProviders(<DatasetList datasets={[sample]} onDelete={vi.fn()} />)
+
+    await screen.findByText('orders_sample')
+    expect(screen.queryByRole('button', { name: /delete/i })).not.toBeInTheDocument()
   })
 })

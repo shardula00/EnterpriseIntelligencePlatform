@@ -37,6 +37,19 @@ class Settings(BaseSettings):
     # than a wildcard.
     cors_allow_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
+    # Auth (Phase 4). This default is only safe for local development - it's
+    # deliberately obvious so nobody mistakes it for a real secret. Anyone
+    # deploying this beyond a local machine must set a real JWT_SECRET_KEY.
+    jwt_secret_key: str = "CHANGE-ME-THIS-IS-A-LOCAL-DEV-ONLY-DEFAULT-SECRET"
+    jwt_algorithm: str = "HS256"
+    jwt_expires_minutes: int = 60
+
+    # Bootstrap admin (Phase 4). Read only by scripts/bootstrap_admin.py -
+    # never used as a fallback/default password. No default value for the
+    # password: bootstrap_admin.py refuses to run if it's unset.
+    bootstrap_admin_email: str = "admin@example.com"
+    bootstrap_admin_password: str | None = None
+
 
 @lru_cache
 def get_settings() -> Settings:

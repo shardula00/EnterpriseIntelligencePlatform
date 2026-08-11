@@ -1,0 +1,66 @@
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { describe, expect, it, vi } from 'vitest'
+import { AppShell } from './AppShell'
+import * as apiClient from '../../api/client'
+import { AuthProvider } from '../../auth/AuthContext'
+import { fakeUser, setFakeToken, VIEWER_PERMISSIONS } from '../../test/authTestUtils'
+
+vi.mock('../../api/client')
+
+function renderShell() {
+  return render(
+    <MemoryRouter initialEntries={['/']}>
+      <AuthProvider>
+        <Routes>
+          <Route path="/" element={<AppShell>content</AppShell>} />
+          <Route path="/login" element={<div>Login page</div>} />
+        </Routes>
+      </AuthProvider>
+    </MemoryRouter>,
+  )
+}
+
+describe('AppShell', () => {
+  it('shows Sign in / Register links, not the user menu, when unauthenticated', async () => {
+    renderShell()
+    expect(await screen.findByRole('link', { name: 'Sign in' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Register' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /log out/i })).not.toBeInTheDocument()
+  })
+
+  it('shows Users and Audit Log links for an Admin', async () => {
+    setFakeToken()
+    vi.mocked(apiClient.authMe).mockResolvedValue(fakeUser())
+
+    renderShell()
+    expect(await screen.findByRole('button', { name: /log out/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Users' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Audit Log' })).toBeInTheDocument()
+  })
+
+  it('hides Users and Audit Log links for a Viewer', async () => {
+    setFakeToken()
+    vi.mocked(apiClient.authMe).mockResolvedValue(
+      fakeUser({ roles: ['VIEWER'], permissions: VIEWER_PERMISSIONS }),
+    )
+
+    renderShell()
+    await screen.findByRole('button', { name: /log out/i })
+    expect(screen.queryByRole('link', { name: 'Users' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Audit Log' })).not.toBeInTheDocument()
+  })
+
+  it('logs out and returns to the login page when Log out is clicked', async () => {
+    setFakeToken()
+    vi.mocked(apiClient.authMe).mockResolvedValue(fakeUser())
+    vi.mocked(apiClient.authLogout).mockResolvedValue(undefined)
+
+    renderShell()
+    await userEvent.click(await screen.findByRole('button', { name: /log out/i }))
+
+    expect(await screen.findByText('Login page')).toBeInTheDocument()
+    expect(apiClient.authLogout).toHaveBeenCalled()
+  })
+})

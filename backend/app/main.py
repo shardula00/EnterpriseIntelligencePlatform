@@ -3,9 +3,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.audit import router as audit_router
+from app.api.auth import router as auth_router
 from app.api.datasets import router as datasets_router
 from app.api.health import router as health_router
 from app.api.kpis import router as kpis_router
+from app.api.users import catalog_router as users_catalog_router
+from app.api.users import router as users_router
 from app.config import get_settings
 
 settings = get_settings()
@@ -22,5 +26,9 @@ app.add_middleware(
 )
 
 app.include_router(health_router, tags=["health"])
+app.include_router(auth_router)
+app.include_router(users_router)
+app.include_router(users_catalog_router)
+app.include_router(audit_router)
 app.include_router(datasets_router)
 app.include_router(kpis_router)

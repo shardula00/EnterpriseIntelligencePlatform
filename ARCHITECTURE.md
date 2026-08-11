@@ -125,10 +125,26 @@ Sits above the ML and AI platforms: turns predictions/retrieved evidence
 into recommendations, risk scores, and what-if simulations, with a human
 approval workflow before any recommendation is treated as an action.
 
-### 3.7 Security (from Phase 4)
-JWT-based authentication, role-based access control enforced at the API
-layer, and an audit log of sensitive actions. Secrets always via environment
-variables (`.env`, never committed — see `.gitignore`), never hard-coded.
+### 3.7 Security (implemented Phase 4)
+JWT-based authentication (`app/auth/`), role-based access control enforced
+at the API layer via `Depends(require_permission(...))` (`app/rbac/`), and
+an audit log of every security/administration-relevant action
+(`app/audit/`). Secrets always via environment variables (`.env`, never
+committed — see `.gitignore`), never hard-coded.
+
+Identity and authorization are deliberately separate modules: a JWT proves
+*who* (minimal claims - `sub`, `tv`, `iat`, `exp`, nothing else), while
+*what they can do* is resolved fresh from the database on every request,
+never baked into the token, so a permission change takes effect
+immediately rather than waiting for a token to expire. Three roles
+(`ADMIN`/`ANALYST`/`VIEWER`, a user may hold more than one) map to a fixed
+permission catalog (`dataset:*`, `dashboard:*`, `user:*`, `audit:read`);
+revocation (logout, admin deactivation) works via a per-user
+`token_version` counter rather than a token blocklist or refresh-token
+rotation scheme — simpler, at the accepted cost of invalidating every
+session for that user at once rather than just one device. Full rationale,
+including the frontend's `localStorage` token-storage tradeoff, is in
+`backend/README.md`'s and `frontend/README.md`'s Phase 4 sections.
 
 ### 3.8 MLOps & CI/CD
 MLflow for tracking/registry (runs locally, backed by Postgres or local

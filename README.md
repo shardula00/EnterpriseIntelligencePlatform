@@ -73,8 +73,8 @@ Full reasoning, component responsibilities, and data flow are in
 | 0 | Project foundation — docs, repo skeleton |
 | 1 | Local infra & backend skeleton — Docker Compose, Postgres/pgvector, FastAPI, CI |
 | 2 | Data platform — ingestion, schema detection, profiling, quality, lineage |
-| 3 | BI layer — KPI engine, React/Vite/Tailwind dashboards (**current**) |
-| 4 | Auth & RBAC — users, roles, permissions, audit log |
+| 3 | BI layer — KPI engine, React/Vite/Tailwind dashboards |
+| 4 | Auth & RBAC — users, roles, permissions, audit log (**current**) |
 | 5 | Classical ML — churn, forecasting, segmentation, anomaly detection, MLflow |
 | 6 | MLOps hardening — monitoring, drift detection, serving |
 | 7 | GenAI/RAG foundation — embeddings, pgvector retrieval, configurable LLM provider |
@@ -128,8 +128,8 @@ EnterpriseIntelligencePlatform/
 ├── DEVELOPMENT_PLAN.md      — phased implementation plan
 ├── .gitignore
 ├── .python-version          — pins Python 3.12 for the backend/ML environment
-├── backend/                 — FastAPI app: ingestion pipeline (Phase 2), KPI engine (Phase 3)
-├── frontend/                — React + TS + Vite + Tailwind app (Phase 3)
+├── backend/                 — FastAPI app: ingestion (Phase 2), KPI engine (Phase 3), auth/RBAC/audit (Phase 4)
+├── frontend/                — React + TS + Vite + Tailwind app (Phase 3), auth-aware (Phase 4)
 ├── data/                    — local dataset working area (gitignored contents)
 ├── infra/                   — docker-compose.yml (Postgres + pgvector)
 └── docs/                    — ADRs and diagrams as they accumulate
@@ -137,14 +137,15 @@ EnterpriseIntelligencePlatform/
 
 ## Status
 
-**Phase 3 — Business Intelligence Layer & Frontend Introduction.** A working
-end-to-end system: upload a CSV/Excel/JSON file through the React frontend,
-watch it get validated, schema-detected, profiled, quality-scored, and
-loaded into Postgres by the backend (Phase 2), then explore its schema,
-quality report, data preview, lineage, and a generic KPI dashboard
-(stat tiles, breakdown chart, trend chart) — all in the browser, against
-real data, with no hardcoded business schema. See
-[DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) for what comes next.
+**Phase 4 — Authentication, RBAC & Audit Logging.** The platform is now a
+real multi-user application: register or log in, and every dataset/KPI/
+user/audit route requires a valid session and the right permission -
+enforced server-side, not just hidden in the UI. Three roles (Admin,
+Analyst, Viewer) with a fine-grained permission catalog; an admin console
+for managing users and roles; a queryable audit log of every
+security-relevant action. All of Phase 1–3's ingestion, KPI, and dashboard
+functionality keeps working exactly as before, now behind that boundary.
+See [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) for what comes next.
 
 ## Local development principles
 

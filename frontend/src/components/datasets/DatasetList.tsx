@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { DatasetSummary } from '../../api/types'
+import { usePermission } from '../../hooks/usePermission'
 import { EmptyState } from '../common/EmptyState'
 import { QualityScoreBadge } from './QualityScoreBadge'
 
@@ -17,6 +18,10 @@ export function DatasetList({
   datasets: DatasetSummary[]
   onDelete: (dataset: DatasetSummary) => void
 }) {
+  // UX only - the backend independently rejects DELETE without
+  // dataset:delete regardless of whether this button is shown.
+  const canDelete = usePermission('dataset:delete')
+
   if (datasets.length === 0) {
     return (
       <EmptyState
@@ -60,13 +65,15 @@ export function DatasetList({
               </td>
               <td className="px-4 py-3 text-slate-500">{formatDate(dataset.created_at)}</td>
               <td className="px-4 py-3 text-right">
-                <button
-                  type="button"
-                  onClick={() => onDelete(dataset)}
-                  className="text-xs font-medium text-slate-400 hover:text-red-600"
-                >
-                  Delete
-                </button>
+                {canDelete && (
+                  <button
+                    type="button"
+                    onClick={() => onDelete(dataset)}
+                    className="text-xs font-medium text-slate-400 hover:text-red-600"
+                  >
+                    Delete
+                  </button>
+                )}
               </td>
             </tr>
           ))}

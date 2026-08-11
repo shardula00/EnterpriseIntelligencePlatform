@@ -3,7 +3,9 @@
 React + TypeScript + Vite + Tailwind app (Phase 3). Talks to the backend
 exclusively through its REST API, using a client typed against the
 backend's real OpenAPI schema - no business logic lives here beyond
-presentation and interaction state.
+presentation and interaction state. Phase 4 added authentication
+(login/register/logout), protected routes, and role-aware UI - see
+"Authentication (Phase 4)" below.
 
 ## Prerequisites
 
@@ -31,9 +33,46 @@ With the backend already running (`uvicorn app.main:app --reload` from
 npm run dev
 ```
 
-Visit `http://localhost:5173`. Upload a CSV/Excel/JSON file (e.g.
+Visit `http://localhost:5173`. You'll land on `/login` (Phase 4: every
+application route requires authentication). Register an account (starts
+as Viewer) or sign in as the bootstrap admin (see
+[../backend/README.md](../backend/README.md#authentication--rbac-phase-4)),
+then upload a CSV/Excel/JSON file (e.g.
 `backend/tests/fixtures/orders_sample.csv`) and explore its Overview
 (KPIs), Schema, Quality, Preview, and Lineage tabs.
+
+## Authentication (Phase 4)
+
+- **`/login` and `/register`** are the only public routes; everything else
+  is wrapped in `ProtectedRoute` (redirects to `/login` if unauthenticated)
+  or `RequirePermission` (redirects home if authenticated but not
+  permitted - used for `/admin/users` and `/admin/audit`).
+- **`AuthContext`** (`src/auth/AuthContext.tsx`) holds the current user and
+  exposes `login`/`register`/`logout`; `usePermission(name)`
+  (`src/hooks/usePermission.ts`) is the UX-only check components use to
+  decide what to show (e.g. hiding the dataset Delete button, or the
+  Breakdown/Trend charts, for a Viewer). **The backend independently
+  enforces every one of these** - hiding a control here only improves UX,
+  it is never the security boundary; the Phase 4 E2E pass explicitly
+  confirms the backend rejects a Viewer's delete attempt via a raw `fetch`
+  call bypassing the UI entirely, not just that the button is hidden.
+- **Token storage: `localStorage`** (`src/auth/tokenStorage.ts`) - a
+  deliberate portfolio-scale tradeoff, not an oversight. A token readable
+  by `localStorage` is also readable by any script that gets injected into
+  the page (XSS), which an `httpOnly` cookie would prevent. This app
+  accepted that tradeoff because: the token is short-lived (60 minutes, no
+  refresh token to steal for long-term persistence); the app renders no
+  user-supplied HTML anywhere (no current XSS sink); and building
+  `httpOnly` + `Secure` + `SameSite` cookies with CSRF protection is real
+  additional infrastructure that wasn't justified for this phase. A
+  production system handling more sensitive data should use that cookie
+  approach instead - noted here as a real, known limitation, not
+  minimized.
+- **On any `401`**, the API client (`src/api/client.ts`) clears the stored
+  token and dispatches an `eip:unauthorized` event; `AuthContext` listens
+  for it and resets to the logged-out state, so an expired or
+  server-invalidated token (logout elsewhere, admin deactivation) is
+  caught on the very next request, not just at the next page load.
 
 ## Regenerating the typed API client
 
@@ -75,28 +114,50 @@ src/
   api/
     schema.d.ts   - generated from the backend's OpenAPI schema (see above)
     client.ts     - typed fetch wrapper, the ONLY place that calls the network
+                    (also injects the Bearer token and handles 401s - Phase 4)
     types.ts      - convenience aliases onto the generated component schemas
+  auth/
+    AuthContext.tsx   - current user, login/register/logout, loading state
+    tokenStorage.ts   - localStorage token persistence (see tradeoff above)
   hooks/
-    useAsync.ts   - small loading/success/error data-fetching hook
+    useAsync.ts        - small loading/success/error data-fetching hook
+    usePermission.ts   - UX-only permission check (see Authentication above)
   components/
-    layout/            - AppShell (nav + page frame)
+    layout/            - AppShell (nav + page frame; role-aware nav links, Phase 4)
+    routing/            - ProtectedRoute, RequirePermission (Phase 4)
     upload/             - UploadDropzone
-    datasets/           - DatasetList, QualityScoreBadge
+    datasets/           - DatasetList (Delete button gated by dataset:delete), QualityScoreBadge
     dataset-detail/     - SchemaTable, QualityPanel, PreviewTable, LineageTimeline
-    dataset-detail/kpi/ - KpiDashboard, StatTile, BreakdownChart, TrendChart
+    dataset-detail/kpi/ - KpiDashboard (Breakdown/Trend gated by dashboard:configure), StatTile, BreakdownChart, TrendChart
     common/             - LoadingSpinner, ErrorMessage, EmptyState
   pages/
-    DatasetsPage.tsx       - upload + dataset list ("/")
-    DatasetDetailPage.tsx  - tabbed dataset detail ("/datasets/:datasetId")
+    DatasetsPage.tsx        - upload + dataset list ("/")
+    DatasetDetailPage.tsx   - tabbed dataset detail ("/datasets/:datasetId")
+    LoginPage.tsx, RegisterPage.tsx  - Phase 4
+    admin/UsersPage.tsx     - user management ("/admin/users", user:read)
+    admin/AuditLogPage.tsx  - audit log viewer ("/admin/audit", audit:read)
+  test/
+    renderWithProviders.tsx  - render helper wrapping MemoryRouter + AuthProvider
+    authTestUtils.ts         - fakeUser()/setFakeToken() for auth-aware component tests
 ```
 
-## Known limitations (Phase 3)
+## Known limitations
 
+**Phase 3:**
 - The KPI dashboard's default breakdown/trend/metric selections are the
   first column that qualifies, not necessarily the most "interesting"
   one for a given dataset - the dropdowns let you pick a better one in
   one click, but there's no smarter auto-selection yet.
-- No authentication (not required until Phase 4) - the API and UI are
-  both fully open.
 - No production build has been deployed anywhere; `npm run build`
   produces a static bundle but nothing serves it yet outside local `preview`.
+
+**Phase 4:**
+- Token storage is `localStorage`, not an `httpOnly` cookie - see
+  "Authentication (Phase 4)" above for the full tradeoff writeup.
+- No password-strength meter or "forgot password" flow in the UI (the
+  backend also doesn't implement password reset - see backend/README.md's
+  security limitations).
+- The admin Users page lets an admin assign multiple roles via checkboxes,
+  but the create-user form is intentionally minimal (name/email/password
+  only, always starts as Viewer) - role assignment is a separate,
+  deliberate follow-up action, not part of creation.

@@ -1,7 +1,19 @@
 import type { ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../auth/AuthContext'
+import { usePermission } from '../../hooks/usePermission'
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const { status, user, logout } = useAuth()
+  const canManageUsers = usePermission('user:read')
+  const canViewAudit = usePermission('audit:read')
+  const navigate = useNavigate()
+
+  async function handleLogout() {
+    await logout()
+    navigate('/login')
+  }
+
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="border-b border-slate-200 bg-white">
@@ -10,10 +22,43 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="text-lg font-semibold text-slate-900">Enterprise Intelligence</span>
             <span className="text-xs font-medium text-slate-400">Platform</span>
           </Link>
-          <nav className="text-sm text-slate-500">
-            <Link to="/" className="hover:text-accent-600">
-              Datasets
-            </Link>
+          <nav className="flex items-center gap-5 text-sm text-slate-500">
+            {status === 'authenticated' ? (
+              <>
+                <Link to="/" className="hover:text-accent-600">
+                  Datasets
+                </Link>
+                {canManageUsers && (
+                  <Link to="/admin/users" className="hover:text-accent-600">
+                    Users
+                  </Link>
+                )}
+                {canViewAudit && (
+                  <Link to="/admin/audit" className="hover:text-accent-600">
+                    Audit Log
+                  </Link>
+                )}
+                <span className="hidden text-xs text-slate-400 sm:inline">
+                  {user?.full_name} · {user?.roles.join(', ')}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100"
+                >
+                  Log out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link to="/login" className="hover:text-accent-600">
+                  Sign in
+                </Link>
+                <Link to="/register" className="hover:text-accent-600">
+                  Register
+                </Link>
+              </>
+            )}
           </nav>
         </div>
       </header>

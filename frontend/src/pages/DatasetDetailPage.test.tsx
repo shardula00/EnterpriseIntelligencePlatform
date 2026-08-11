@@ -1,9 +1,11 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { DatasetDetailPage } from './DatasetDetailPage'
 import * as apiClient from '../api/client'
+import { AuthProvider } from '../auth/AuthContext'
+import { fakeUser, setFakeToken } from '../test/authTestUtils'
 
 vi.mock('../api/client')
 
@@ -52,6 +54,11 @@ const kpiSummary = {
   suggested_trend_columns: [],
 }
 
+beforeEach(() => {
+  setFakeToken()
+  vi.mocked(apiClient.authMe).mockResolvedValue(fakeUser())
+})
+
 function renderPage() {
   vi.mocked(apiClient.getDataset).mockResolvedValue(dataset as never)
   vi.mocked(apiClient.getColumns).mockResolvedValue(columns as never)
@@ -62,9 +69,11 @@ function renderPage() {
 
   return render(
     <MemoryRouter initialEntries={['/datasets/abc']}>
-      <Routes>
-        <Route path="/datasets/:datasetId" element={<DatasetDetailPage />} />
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          <Route path="/datasets/:datasetId" element={<DatasetDetailPage />} />
+        </Routes>
+      </AuthProvider>
     </MemoryRouter>,
   )
 }
@@ -127,9 +136,11 @@ describe('DatasetDetailPage', () => {
 
     render(
       <MemoryRouter initialEntries={['/datasets/abc']}>
-        <Routes>
-          <Route path="/datasets/:datasetId" element={<DatasetDetailPage />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/datasets/:datasetId" element={<DatasetDetailPage />} />
+          </Routes>
+        </AuthProvider>
       </MemoryRouter>,
     )
 

@@ -5,8 +5,11 @@ foundational plumbing (settings, DB connection, migrations, health check).
 Phase 2 added generic dataset ingestion (CSV/Excel/JSON upload -> schema
 detection -> profiling -> quality scoring -> a real Postgres table ->
 lineage). Phase 3 added a generic KPI engine (`app/bi/`) and CORS support
-for the new React frontend. Further domain features (auth, ML, RAG, etc.)
-arrive in later phases per [DEVELOPMENT_PLAN.md](../DEVELOPMENT_PLAN.md).
+for the new React frontend. Phase 4 added authentication, RBAC, and audit
+logging (`app/auth/`, `app/rbac/`, `app/audit/`) - every dataset/KPI/user/
+audit route now requires a valid JWT and the right permission. Further
+domain features (ML, RAG, etc.) arrive in later phases per
+[DEVELOPMENT_PLAN.md](../DEVELOPMENT_PLAN.md).
 
 ## Prerequisites
 
@@ -34,6 +37,13 @@ cp .env.example .env
 
 # 4. Apply database migrations
 .venv\Scripts\alembic upgrade head
+
+# 5. Bootstrap the first admin account (Phase 4) - see "Authentication &
+#    RBAC" below for the full explanation. Set a real password via env var,
+#    never hard-code one:
+$env:BOOTSTRAP_ADMIN_EMAIL = "admin@example.com"
+$env:BOOTSTRAP_ADMIN_PASSWORD = "choose-a-real-local-dev-password"
+.venv\Scripts\python.exe -m scripts.bootstrap_admin
 ```
 
 If you're using VS Code, point its Python interpreter at
@@ -94,23 +104,30 @@ this is specific to any one business schema - it works the same way for
 any flat tabular file. See [ARCHITECTURE.md](../ARCHITECTURE.md) or the
 module docstrings under `app/ingestion/` for the full design rationale.
 
+All of these now require authentication (Phase 4) - get a token first:
+
 ```powershell
+$body = @{ email = "admin@example.com"; password = "choose-a-real-local-dev-password" } | ConvertTo-Json
+$token = (Invoke-RestMethod -Uri http://localhost:8000/auth/login -Method Post -Body $body -ContentType "application/json").access_token
+$headers = @{ Authorization = "Bearer $token" }
+
 # Upload one of the committed test fixtures as a quick demo:
-curl -X POST http://localhost:8000/datasets/upload -F "file=@tests/fixtures/orders_sample.csv"
+curl -X POST http://localhost:8000/datasets/upload -H "Authorization: Bearer $token" -F "file=@tests/fixtures/orders_sample.csv"
 
 # Then, with the returned "id":
-curl http://localhost:8000/datasets/<id>
-curl http://localhost:8000/datasets/<id>/columns
-curl http://localhost:8000/datasets/<id>/quality
-curl http://localhost:8000/datasets/<id>/lineage
-curl "http://localhost:8000/datasets/<id>/preview?limit=10"
-curl -X DELETE http://localhost:8000/datasets/<id>
+curl http://localhost:8000/datasets/<id> -H "Authorization: Bearer $token"
+curl http://localhost:8000/datasets/<id>/columns -H "Authorization: Bearer $token"
+curl http://localhost:8000/datasets/<id>/quality -H "Authorization: Bearer $token"
+curl http://localhost:8000/datasets/<id>/lineage -H "Authorization: Bearer $token"
+curl "http://localhost:8000/datasets/<id>/preview?limit=10" -H "Authorization: Bearer $token"
+curl -X DELETE http://localhost:8000/datasets/<id> -H "Authorization: Bearer $token"  # requires dataset:delete (ADMIN)
 ```
 
-Endpoints: `POST /datasets/upload`, `GET /datasets`, `GET /datasets/{id}`,
-`GET /datasets/{id}/columns`, `GET /datasets/{id}/quality`,
-`GET /datasets/{id}/lineage`, `GET /datasets/{id}/preview`,
-`DELETE /datasets/{id}`.
+Endpoints: `POST /datasets/upload` (needs `dataset:create`), `GET /datasets`,
+`GET /datasets/{id}`, `GET /datasets/{id}/columns`,
+`GET /datasets/{id}/quality`, `GET /datasets/{id}/lineage`,
+`GET /datasets/{id}/preview` (all need `dataset:read`),
+`DELETE /datasets/{id}` (needs `dataset:delete`, ADMIN-only by default).
 
 Uploaded files are retained for provenance under
 `Settings.upload_storage_dir` (defaults to `<repo-root>/data/raw/uploads`,
@@ -128,9 +145,80 @@ are never referenced, only column *types* and *cardinality* detected in
 Phase 2. See `app/bi/service.py`'s module docstring for the full rationale.
 
 ```powershell
-curl http://localhost:8000/datasets/<id>/kpis
-curl "http://localhost:8000/datasets/<id>/kpis/breakdown?group_by=category&metric=quantity&agg=sum"
-curl "http://localhost:8000/datasets/<id>/kpis/trend?date_column=order_date&metric=quantity&granularity=month&agg=sum"
+curl http://localhost:8000/datasets/<id>/kpis -H "Authorization: Bearer $token"                        # dashboard:read
+curl "http://localhost:8000/datasets/<id>/kpis/breakdown?group_by=category&metric=quantity&agg=sum" -H "Authorization: Bearer $token"  # dashboard:configure
+curl "http://localhost:8000/datasets/<id>/kpis/trend?date_column=order_date&metric=quantity&granularity=month&agg=sum" -H "Authorization: Bearer $token"  # dashboard:configure
+```
+
+## Authentication & RBAC (Phase 4)
+
+Every route except `GET /health`, `POST /auth/register`, and
+`POST /auth/login` requires a valid `Authorization: Bearer <token>` header.
+See `app/auth/`, `app/rbac/`, `app/audit/` module docstrings for the full
+design rationale; summary:
+
+- **Identity vs. authorization are separate.** A JWT only proves *who*
+  (`sub`, `tv`, `iat`, `exp` claims - nothing else, see
+  `app/auth/security.py`); *what they can do* is resolved fresh from the
+  database on every request via `rbac.service.effective_permissions()`,
+  never cached in the token.
+- **Roles**: `ADMIN`, `ANALYST`, `VIEWER` - a user can hold more than one;
+  effective permissions are the union across all assigned roles.
+- **Permissions**: `dataset:read/create/delete`, `dashboard:read/configure`,
+  `user:read/create/update/delete`, `audit:read`. Default grants (see
+  `app/rbac/seed.py`): VIEWER gets read-only dataset/dashboard access;
+  ANALYST adds dataset upload and dashboard configuration; ADMIN gets
+  everything, including `dataset:delete` (deliberately not given to
+  ANALYST) and all `user:*`/`audit:*` permissions.
+- **Routes are gated with `Depends(require_permission("..."))`**
+  (`app/rbac/dependencies.py`) at the route definition - not scattered
+  `if role == ...` checks in handlers.
+- **Self-privilege-escalation is blocked categorically**: nobody can change
+  their own role assignment or active status via the admin API, at all.
+- **Registration always grants VIEWER.** The only way to get ANALYST/ADMIN
+  is an existing admin granting it via `POST /users/{id}/roles`.
+- **No refresh tokens.** One 60-minute access token; logout and admin
+  deactivation both bump `User.token_version`, and any token whose `tv`
+  claim no longer matches is rejected - this invalidates every active
+  session for that user at once, not just one device/browser.
+
+```powershell
+curl -X POST http://localhost:8000/auth/register -H "Content-Type: application/json" `
+  -d '{"email":"analyst@example.com","password":"Password123","full_name":"A Analyst"}'
+curl -X POST http://localhost:8000/auth/login -H "Content-Type: application/json" `
+  -d '{"email":"analyst@example.com","password":"Password123"}'
+curl http://localhost:8000/auth/me -H "Authorization: Bearer $token"
+curl -X POST http://localhost:8000/auth/logout -H "Authorization: Bearer $token"
+
+# Admin user management (needs user:read/create/update/delete):
+curl http://localhost:8000/users -H "Authorization: Bearer $token"
+curl -X POST http://localhost:8000/users/<id>/roles -H "Authorization: Bearer $token" `
+  -H "Content-Type: application/json" -d '{"role_names":["ANALYST"]}'
+curl -X PATCH http://localhost:8000/users/<id> -H "Authorization: Bearer $token" `
+  -H "Content-Type: application/json" -d '{"is_active":false}'
+curl http://localhost:8000/roles -H "Authorization: Bearer $token"
+curl http://localhost:8000/permissions -H "Authorization: Bearer $token"
+```
+
+### Bootstrap admin
+
+`scripts/bootstrap_admin.py` seeds the roles/permissions catalog and
+creates the first admin account - idempotent, safe to re-run. It reads
+`BOOTSTRAP_ADMIN_EMAIL`/`BOOTSTRAP_ADMIN_PASSWORD` from the environment and
+refuses to run if the password isn't set (no hard-coded fallback). See the
+"First-time setup" section above for the exact command.
+
+## Audit logging (Phase 4)
+
+`app/audit/service.py`'s `record_event(...)` is the single place any audit
+row is ever written - registration, login (success and failure), logout,
+dataset upload/deletion, and every admin user-management action all go
+through it, which is also where a fixed set of forbidden metadata keys
+(`password`, `token`, `secret`, etc., case-insensitive) is stripped before
+the row is written, regardless of what a caller passed in.
+
+```powershell
+curl "http://localhost:8000/audit-logs?limit=20&action=dataset.deleted" -H "Authorization: Bearer $token"  # needs audit:read
 ```
 
 ## CORS (Phase 3)
@@ -155,10 +243,35 @@ app/
                   orchestration) - see module docstrings for details
   bi/           - generic KPI computation (summary stats, breakdown,
                   trend) over a dataset's real table - see module docstrings
+  auth/         - identity: registration, login, password hashing (Argon2id),
+                  JWT issuance/verification, get_current_user dependency
+  rbac/         - authorization: roles/permissions catalog + seeding,
+                  effective-permission resolution, require_permission(...)
+  audit/        - centralized audit event recording + querying
 migrations/     - Alembic environment and version history
-tests/          - pytest suite
+scripts/        - bootstrap_admin.py (dev-only first-admin creation)
+tests/          - pytest suite (tests/auth/, tests/rbac/, tests/audit/ for
+                  Phase 4; the `client` fixture is admin-authenticated by
+                  default, so every pre-Phase-4 test kept working unchanged)
 tests/fixtures/ - small synthetic datasets used by the ingestion/KPI tests
 ```
+
+## Known security limitations (Phase 4, disclosed not hidden)
+
+- **No rate limiting / brute-force lockout** on `/auth/login`. Would
+  normally need Redis or similar for distributed rate limiting - explicitly
+  out of scope per this project's "no Redis unless genuinely required" rule.
+- **No email verification** on registration - any syntactically valid email
+  is accepted immediately. Fine for a local/portfolio system, not for a
+  real multi-tenant product.
+- **Password policy is minimum-length only** (8 characters) - no
+  complexity/breach-list checks. A reasonable simplification for this scope.
+- **No password reset / "forgot password" flow.**
+- **CSRF protection isn't implemented, deliberately** - CSRF is a
+  cookie-session concern; this app authenticates via a Bearer token in an
+  `Authorization` header (never a cookie), which isn't attacker-settable
+  cross-site the way a cookie is, so the standard CSRF attack doesn't apply
+  here. It would become relevant if token storage ever moved to cookies.
 
 ## Known warning (non-blocking)
 

@@ -14,3 +14,8 @@ pydantic-settings==2.15.0
 pandas==3.0.5
 openpyxl==3.1.5
 python-multipart==0.0.32
+
+# Auth / RBAC (Phase 4)
+pyjwt==2.13.0
+argon2-cffi==25.1.0
+email-validator==2.3.0
