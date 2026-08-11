@@ -10,5 +10,8 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
+    // Every mocked module's call history resets between tests, so one
+    // test's calls to a mocked API function can never leak into the next.
+    clearMocks: true,
   },
 })

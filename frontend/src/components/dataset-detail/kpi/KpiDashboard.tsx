@@ -1,6 +1,24 @@
 import { useState } from 'react'
 import { getBreakdown, getKpiSummary, getTrend } from '../../../api/client'
-import type { KpiSummary } from '../../../api/types'
+import type { Breakdown, KpiSummary, Trend } from '../../../api/types'
+
+const EMPTY_BREAKDOWN: Breakdown = {
+  dataset_id: '',
+  group_by: '',
+  metric: null,
+  aggregation: 'sum',
+  items: [],
+  total_categories: 0,
+}
+
+const EMPTY_TREND: Trend = {
+  dataset_id: '',
+  date_column: '',
+  metric: '',
+  granularity: 'month',
+  aggregation: 'sum',
+  points: [],
+}
 import { LoadingSpinner } from '../../common/LoadingSpinner'
 import { ErrorMessage } from '../../common/ErrorMessage'
 import { EmptyState } from '../../common/EmptyState'
@@ -27,12 +45,20 @@ function BreakdownSection({ datasetId, summary }: { datasetId: string; summary: 
   const [metric, setMetric] = useState<string>(summary.numeric_columns[0] ?? '')
   const [agg, setAgg] = useState('sum')
 
+  const hasBreakdownColumn = summary.suggested_breakdown_columns.length > 0
+
   const result = useAsync(
-    () => getBreakdown(datasetId, groupBy, agg === 'count' ? undefined : metric, agg),
-    [datasetId, groupBy, metric, agg],
+    // When there's no candidate column the component returns the empty
+    // state below without ever rendering `result` - this branch exists
+    // purely so we skip the (otherwise pointless) network call.
+    () =>
+      hasBreakdownColumn
+        ? getBreakdown(datasetId, groupBy, agg === 'count' ? undefined : metric, agg)
+        : Promise.resolve(EMPTY_BREAKDOWN),
+    [datasetId, groupBy, metric, agg, hasBreakdownColumn],
   )
 
-  if (summary.suggested_breakdown_columns.length === 0) {
+  if (!hasBreakdownColumn) {
     return (
       <EmptyState
         title="No breakdown available"
@@ -83,12 +109,17 @@ function TrendSection({ datasetId, summary }: { datasetId: string; summary: KpiS
   const [granularity, setGranularity] = useState('month')
   const [agg, setAgg] = useState('sum')
 
+  const hasTrendColumn = summary.suggested_trend_columns.length > 0
+
   const result = useAsync(
-    () => getTrend(datasetId, dateColumn, metric, granularity, agg),
-    [datasetId, dateColumn, metric, granularity, agg],
+    // Same reasoning as BreakdownSection above: skip the pointless request
+    // when there's no datetime column to chart against.
+    () =>
+      hasTrendColumn ? getTrend(datasetId, dateColumn, metric, granularity, agg) : Promise.resolve(EMPTY_TREND),
+    [datasetId, dateColumn, metric, granularity, agg, hasTrendColumn],
   )
 
-  if (summary.suggested_trend_columns.length === 0) {
+  if (!hasTrendColumn) {
     return (
       <EmptyState
         title="No trend available"
