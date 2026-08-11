@@ -7,8 +7,13 @@ without real values.
 """
 
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# backend/app/config.py -> backend/app -> backend -> repo root
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_DEFAULT_UPLOAD_STORAGE_DIR = _REPO_ROOT / "data" / "raw" / "uploads"
 
 
 class Settings(BaseSettings):
@@ -21,6 +26,11 @@ class Settings(BaseSettings):
     database_url: str = (
         "postgresql+psycopg://eip_user:eip_dev_password@localhost:5432/eip_dev"
     )
+
+    # Ingestion (Phase 2). Original uploaded files are retained here for
+    # provenance/lineage - never committed to git (see .gitignore).
+    upload_storage_dir: Path = _DEFAULT_UPLOAD_STORAGE_DIR
+    max_upload_size_mb: int = 50
 
 
 @lru_cache

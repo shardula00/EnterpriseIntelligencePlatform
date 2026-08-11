@@ -60,6 +60,10 @@ data/interim/
 *.csv
 *.parquet
 !data/**/sample_*.csv
+# Synthetic, hand-crafted test fixtures are not "real data" - always committed
+# regardless of the *.csv rule above, so the ingestion test suite is runnable
+# from a fresh clone without generating anything first.
+!backend/tests/fixtures/**/*.csv
 
 # ---- Docker ----
 *.pid

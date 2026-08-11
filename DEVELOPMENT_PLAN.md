@@ -79,6 +79,25 @@ quality-scored relational data with lineage.
 results in a queryable Postgres table, a stored profile/quality report, and
 a lineage record — all verifiable via API responses and tests.
 
+**Implementation notes (decided during Phase 2, not in the original plan):**
+- **One physical table per upload**, dynamically created in a dedicated
+  `ingested` Postgres schema (table name derived from the dataset's UUID).
+  Metadata about every dataset (schema, profile, quality issues, lineage)
+  lives in four generic tables in `public` — nothing in the schema itself
+  ever names a specific business concept.
+- **Identifier safety over trust**: raw headers are forced through an
+  allow-list sanitizer (`[a-z0-9_]` only) before anything reaches SQL, and
+  tables are built via SQLAlchemy `Table`/`Column` objects rather than
+  string-built DDL. Verified with a dedicated SQL-injection-attempt test.
+- **Quality score computed before the Postgres write, not after** — the
+  physical table, its quality report, and its lineage record are written
+  together in one transaction, so nothing is ever left half-created.
+- **Profiling runs after type coercion**, not before — computing a mean or
+  min/max on still-raw text would either crash or be meaningless.
+- Re-uploading a file creates an independent new dataset; there is no
+  versioning/append-to-existing-dataset concept yet (a reasonable future
+  extension, out of scope for Phase 2).
+
 ---
 
 ## Phase 3 — Business Intelligence Layer & Frontend Introduction

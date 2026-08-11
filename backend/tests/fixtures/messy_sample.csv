@@ -1,0 +1,9 @@
+id,amount,notes,NOTES!,empty_col
+1,10,ok,x,
+1,10,ok,x,
+2,20,fine,y,
+3,abc,bad value,z,
+4,40,,w,
+5,50,,v,
+6,60,ok,u,
+7,70,ok,t,

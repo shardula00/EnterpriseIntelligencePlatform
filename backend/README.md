@@ -1,10 +1,11 @@
 # backend/
 
-FastAPI backend for the Enterprise Intelligence Platform. As of Phase 1,
-this contains only the foundational plumbing: settings, a database
-connection, one placeholder table, migrations, and a health check. Domain
-features (ingestion, BI, ML, RAG, etc.) arrive in later phases per
-[DEVELOPMENT_PLAN.md](../DEVELOPMENT_PLAN.md).
+FastAPI backend for the Enterprise Intelligence Platform. Phase 1 added the
+foundational plumbing (settings, DB connection, migrations, health check).
+Phase 2 added generic dataset ingestion (CSV/Excel/JSON upload -> schema
+detection -> profiling -> quality scoring -> a real Postgres table ->
+lineage). Further domain features (BI, ML, RAG, etc.) arrive in later
+phases per [DEVELOPMENT_PLAN.md](../DEVELOPMENT_PLAN.md).
 
 ## Prerequisites
 
@@ -82,6 +83,40 @@ not from `alembic.ini` directly - see the comment in `alembic.ini` for why.
 .venv\Scripts\alembic upgrade head
 ```
 
+## Dataset ingestion (Phase 2)
+
+Upload a CSV, XLSX, or JSON file and the pipeline will: sanitize headers
+into safe Postgres identifiers, detect each column's type, coerce/clean the
+data, profile it, score its quality, load it into a real table in the
+`ingested` schema, and record every step as a lineage event. Nothing about
+this is specific to any one business schema - it works the same way for
+any flat tabular file. See [ARCHITECTURE.md](../ARCHITECTURE.md) or the
+module docstrings under `app/ingestion/` for the full design rationale.
+
+```powershell
+# Upload one of the committed test fixtures as a quick demo:
+curl -X POST http://localhost:8000/datasets/upload -F "file=@tests/fixtures/orders_sample.csv"
+
+# Then, with the returned "id":
+curl http://localhost:8000/datasets/<id>
+curl http://localhost:8000/datasets/<id>/columns
+curl http://localhost:8000/datasets/<id>/quality
+curl http://localhost:8000/datasets/<id>/lineage
+curl "http://localhost:8000/datasets/<id>/preview?limit=10"
+curl -X DELETE http://localhost:8000/datasets/<id>
+```
+
+Endpoints: `POST /datasets/upload`, `GET /datasets`, `GET /datasets/{id}`,
+`GET /datasets/{id}/columns`, `GET /datasets/{id}/quality`,
+`GET /datasets/{id}/lineage`, `GET /datasets/{id}/preview`,
+`DELETE /datasets/{id}`.
+
+Uploaded files are retained for provenance under
+`Settings.upload_storage_dir` (defaults to `<repo-root>/data/raw/uploads`,
+gitignored - never committed). Test fixtures live in `tests/fixtures/` and
+*are* committed - they're small, synthetic, and needed for the test suite
+to run from a fresh clone.
+
 ## Layout
 
 ```
@@ -92,8 +127,12 @@ app/
   models/       - ORM models (import every model in models/__init__.py so
                   Alembic autogenerate can see it)
   api/          - API routers, one module per concern
+  ingestion/    - dataset ingestion pipeline (parsing, type inference,
+                  profiling, quality scoring, dynamic table creation,
+                  orchestration) - see module docstrings for details
 migrations/     - Alembic environment and version history
 tests/          - pytest suite
+tests/fixtures/ - small synthetic datasets used by the ingestion tests
 ```
 
 ## Known warning (non-blocking)
