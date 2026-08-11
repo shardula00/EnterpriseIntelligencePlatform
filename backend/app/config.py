@@ -14,6 +14,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # backend/app/config.py -> backend/app -> backend -> repo root
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _DEFAULT_UPLOAD_STORAGE_DIR = _REPO_ROOT / "data" / "raw" / "uploads"
+_DEFAULT_ML_ARTIFACTS_DIR = _REPO_ROOT / "data" / "ml_artifacts"
 
 
 class Settings(BaseSettings):
@@ -49,6 +50,19 @@ class Settings(BaseSettings):
     # password: bootstrap_admin.py refuses to run if it's unset.
     bootstrap_admin_email: str = "admin@example.com"
     bootstrap_admin_password: str | None = None
+
+    # ML (Phase 5). Trained model artifacts (joblib files) are retained here
+    # for provenance/reproducibility, same pattern as upload_storage_dir -
+    # never committed to git.
+    ml_artifacts_dir: Path = _DEFAULT_ML_ARTIFACTS_DIR
+    # A fixed default seed makes training reproducible when a caller doesn't
+    # supply their own. A safety cap on training rows keeps this a local
+    # student-project workload, not something that can accidentally take
+    # minutes on a huge upload; datasets above the cap are randomly
+    # downsampled (with the same seed) and that fact is recorded in the run's
+    # configuration, never silently hidden.
+    ml_default_random_seed: int = 42
+    ml_max_training_rows: int = 50_000
 
 
 @lru_cache

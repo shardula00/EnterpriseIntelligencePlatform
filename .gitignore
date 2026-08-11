@@ -57,6 +57,7 @@ wandb/
 data/raw/
 data/processed/
 data/interim/
+data/ml_artifacts/
 *.csv
 *.parquet
 !data/**/sample_*.csv

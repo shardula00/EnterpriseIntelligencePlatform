@@ -28,6 +28,7 @@ from app.ingestion import service
 from app.main import app
 from app.models.audit import AuditLog
 from app.models.dataset import Dataset
+from app.models.ml_run import MLRun
 from app.models.user import Role, User
 from app.rbac.seed import seed_roles_and_permissions
 
@@ -171,5 +172,30 @@ def _cleanup_audit_logs_created_during_test():
         if new_ids:
             session.execute(AuditLog.__table__.delete().where(AuditLog.id.in_(new_ids)))
             session.commit()
+    finally:
+        session.close()
+
+
+@pytest.fixture(autouse=True)
+def _cleanup_ml_runs_created_during_test():
+    """Declared last so its teardown runs first (pytest tears fixtures down
+    in reverse setup order) - it must delete each run's joblib artifact
+    file *before* `_cleanup_datasets_created_during_test`'s teardown
+    cascade-deletes the MLRun row out from under it (ml_runs.dataset_id is
+    ON DELETE CASCADE, see app/models/ml_run.py)."""
+    session: Session = SessionLocal()
+    existing_ids = set(session.execute(select(MLRun.id)).scalars())
+    session.close()
+
+    yield
+
+    session = SessionLocal()
+    try:
+        new_runs = [r for r in session.execute(select(MLRun)).scalars() if r.id not in existing_ids]
+        for run in new_runs:
+            if run.artifact_path:
+                Path(run.artifact_path).unlink(missing_ok=True)
+            session.delete(run)
+        session.commit()
     finally:
         session.close()

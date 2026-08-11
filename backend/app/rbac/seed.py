@@ -25,13 +25,24 @@ PERMISSION_CATALOG: dict[str, str] = {
     "user:update": "Update users: profile, activation status, role assignment.",
     "user:delete": "Delete users.",
     "audit:read": "View the audit log.",
+    "ml:read": "View ML run history, results, metrics, and predictions.",
+    "ml:train": "Train a new ML model run on a dataset.",
+    "ml:predict": "Generate predictions from a previously trained ML run.",
 }
 
 # Deliberately explicit rather than derived: dataset:delete is ADMIN-only by
 # design, not an accident of set-difference logic.
 DEFAULT_ROLE_PERMISSIONS: dict[str, list[str]] = {
-    "VIEWER": ["dataset:read", "dashboard:read"],
-    "ANALYST": ["dataset:read", "dataset:create", "dashboard:read", "dashboard:configure"],
+    "VIEWER": ["dataset:read", "dashboard:read", "ml:read"],
+    "ANALYST": [
+        "dataset:read",
+        "dataset:create",
+        "dashboard:read",
+        "dashboard:configure",
+        "ml:read",
+        "ml:train",
+        "ml:predict",
+    ],
     "ADMIN": list(PERMISSION_CATALOG.keys()),
 }
 

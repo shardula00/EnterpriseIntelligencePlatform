@@ -220,25 +220,107 @@ endpoints correctly allow/deny based on role; audit log records key actions.
 
 ---
 
-## Phase 5 — Classical Machine Learning
+## Phase 5 — Classical Machine Learning ✅ complete
 
-**Objective:** Real predictive models, tracked and served properly, not
+**Objective:** Real predictive models, evaluated and served properly, not
 notebook-only experiments.
 
-**Deliverables:**
-- MLflow wired into Docker Compose (tracking server + registry backend)
-- Churn prediction model (classification)
-- Sales forecasting model (regression/time-series)
-- Customer segmentation (clustering)
-- Anomaly detection
-- Each model: training script logged to MLflow, evaluation metrics
-  recorded, best version registered
-- API endpoints to serve predictions from the registered model version
-- Tests: training pipeline tests, prediction endpoint tests
+**Deliverables (as actually built — see implementation notes below for why
+this differs from the original plan):**
+- Generic, per-task dataset suitability checking (not hardcoded to one
+  dataset) with specific human-readable rejection reasons
+- Binary classification (e.g. churn), time-series forecasting, customer
+  segmentation, anomaly detection — each with 2-3 candidate models compared
+  on a task-appropriate metric, leakage-safe preprocessing, and
+  explainability via permutation importance
+- API endpoints: suitability, train (one per task), run history/results,
+  predict — gated by new `ml:read`/`ml:train`/`ml:predict` permissions
+  added through the existing RBAC seed mechanism
+- `ml_runs` table (metadata + full results as JSONB) via Alembic; model
+  artifacts stored locally as joblib files, versioned by run, never
+  committed
+- Frontend `/ml` section: task selection, dataset suitability, per-task
+  configuration, training, model comparison, metrics, predictions, feature
+  importance, per-task visualizations
+- 4 new synthetic fixture datasets (one purpose-built per task) plus 79
+  new backend tests and 46 new frontend tests
+- Tests: suitability edge cases, leakage-prevention checks, one test module
+  per task, full API/permission coverage; real 4-task browser E2E (0
+  console/page/network errors)
 
-**Definition of done:** Each model can be retrained via a documented
-command, its run appears in MLflow with metrics, and its predictions are
-servable via the API against real ingested data.
+**Definition of done:** Each task can be trained via the API/UI on a
+suitable dataset, results and metrics are real (not mocked), predictions
+are servable from a persisted artifact, and the full existing (Phase 1–4)
+test suite still passes unmodified in intent (2 pre-existing RBAC tests
+were updated to reflect the new permission catalog, not to work around a
+bug).
+
+**Implementation notes (decided during Phase 5, not in the original plan):**
+- **No MLflow, no model registry, no monitoring/drift detection — moved to
+  Phase 6.** The original plan bundled experiment tracking and a model
+  registry into this phase; on reflection, a full registry (versioning "the
+  same" model across retrains, promotion workflows) is a distinct MLOps
+  concern from "can the platform train and evaluate a model correctly,"
+  and pulling it forward would have meant building registry machinery
+  before there's more than one candidate registry entry to manage. What
+  Phase 5 persists instead is exactly what's needed for reproducibility
+  today: per-run metadata (dataset, task, config, seed, timestamp) and
+  results in `ml_runs`, plus the artifact on disk — explicitly documented
+  in `app/ml/artifacts.py` and `app/models/ml_run.py` as *not* a registry.
+- **No XGBoost.** `RandomForestClassifier`/`Regressor` and
+  `HistGradientBoosting*` (both in scikit-learn already) cover the
+  "something stronger than a linear/naive baseline" need for all 4 tasks
+  without adding a second heavyweight ML dependency. See
+  `backend/app/ml/__init__.py`.
+- **No SHAP.** `sklearn.inspection.permutation_importance` gives
+  model-agnostic feature importance that works identically across every
+  candidate model type (linear, random forest, gradient boosting) each task
+  compares — SHAP would need model-specific explainers and add a
+  dependency for a marginal accuracy gain in explanation fidelity that
+  isn't needed at this scale.
+- **Reused Phase 2's ingestion table-reconstruction, not a second data path.**
+  `app/ml/data_loading.py` loads a dataset's physical table the same way
+  `app/ingestion/service.get_preview` does, via `table_builder.
+  build_dataset_table` + `fetch_preview_rows`. This surfaced a real,
+  pre-existing (Phase 2) bug: `fetch_preview_rows` returns row dict keys as
+  SQLAlchemy `quoted_name` (a `str` subclass), invisible to every existing
+  caller (they only ever serialize to JSON) but silently breaking
+  scikit-learn's strict `type(name) is str` column-name detection deep
+  inside `ColumnTransformer`. Fixed with a one-line `str(k)` cast in
+  `data_loading.py` — scoped to the ML loader, since that's the only
+  caller that needed it.
+- **Forecasting is never downsampled**, unlike the other 3 tasks (capped
+  at `Settings.ml_max_training_rows`, default 50,000, with `was_sampled`
+  recorded in the run). A time series' row *order* is the signal; a random
+  sample would destroy the chronological sequence lags and backtesting
+  depend on.
+- **Training is synchronous end-to-end** — an API request blocks until the
+  model is fit. Acceptable at this project's data scale (largest fixture:
+  505 rows; full run including all 3 RandomForest/HistGB candidates
+  typically completes in well under a second once warmed up). Documented
+  as a limitation for Phase 6 to address with async job execution if
+  dataset sizes grow, not silently deferred.
+- **`MLRunResultsOut.results` is a real Pydantic union**
+  (`ClassificationResultsOut | ForecastResultsOut | SegmentationResultsOut |
+  AnomalyResultsOut`), not `dict[str, Any]`, even though the underlying
+  `ml_runs.results` database column is a single JSONB field whose shape
+  genuinely differs per task. Re-validating the stored dict against the
+  union on the way out means the OpenAPI schema — and so the
+  `openapi-typescript`-generated frontend types — describes all 4 real
+  result shapes instead of an opaque blob, which is what let the frontend
+  render real, typed results instead of stringly-typed lookups.
+- **Frontend results-view union narrowing uses the run's own `task_type`**,
+  not a discriminator field on the result types themselves (none of the 4
+  result schemas carry one) — `isClassificationResults()` /
+  `isForecastResults()` / etc. in `frontend/src/api/types.ts` narrow on the
+  sibling `run.task_type` field instead, documented inline as the reason
+  they exist rather than a discriminated union.
+- Existing Phase 1–4 tests needed only two intentional content updates, not
+  workarounds: `tests/rbac/test_service.py` and `tests/rbac/test_api.py`'s
+  hardcoded VIEWER/ANALYST permission sets and the "10 permissions" catalog
+  count were updated to include the 3 new `ml:*` permissions — a correct
+  consequence of extending the catalog, verified by reading the actual
+  diff, not a bug being paved over.
 
 ---
 
@@ -248,11 +330,16 @@ servable via the API against real ingested data.
 can be trusted over time."
 
 **Deliverables:**
+- MLflow (or equivalent) wired in as an actual model registry — Phase 5
+  deliberately persisted only per-run metadata/artifacts, not a registry;
+  this phase builds the versioning/promotion layer on top of that
 - Model versioning/promotion workflow (staging → production in registry)
 - Basic data drift detection (comparing incoming data distribution to
   training distribution)
 - Basic model performance monitoring over time
 - Alerting/logging when drift or degradation is detected
+- Async training execution (Phase 5's training is synchronous; revisit if
+  dataset sizes/training time have grown enough to justify a job queue)
 
 **Definition of done:** Feeding the system a deliberately shifted dataset
 triggers a detectable drift signal, visible via API/logs.

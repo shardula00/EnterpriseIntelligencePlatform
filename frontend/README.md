@@ -5,7 +5,9 @@ exclusively through its REST API, using a client typed against the
 backend's real OpenAPI schema - no business logic lives here beyond
 presentation and interaction state. Phase 4 added authentication
 (login/register/logout), protected routes, and role-aware UI - see
-"Authentication (Phase 4)" below.
+"Authentication (Phase 4)" below. Phase 5 added a `/ml` section - task
+selection, dataset suitability, per-task training configuration, model
+comparison, and predictions - see "Classical ML (Phase 5)" below.
 
 ## Prerequisites
 
@@ -74,6 +76,45 @@ then upload a CSV/Excel/JSON file (e.g.
   server-invalidated token (logout elsewhere, admin deactivation) is
   caught on the very next request, not just at the next page load.
 
+## Classical ML (Phase 5)
+
+The `/ml` section (gated by `ml:read`; training additionally needs
+`ml:train`, predictions need `ml:predict` - see `backend/README.md`'s
+Phase 5 section for the permission catalog):
+
+- **`/ml`** - task selection (4 cards: Binary Classification, Time-Series
+  Forecasting, Customer Segmentation, Anomaly Detection) plus a recent-runs
+  list.
+- **`/ml/:taskType`** - dataset selection for that task: every uploaded
+  dataset shown with a real suitability check (one `GET .../ml/suitability`
+  call per dataset, since that endpoint reports all 4 tasks at once) -
+  suitable datasets link to the configure page, unsuitable ones show the
+  backend's actual rejection reason and aren't clickable.
+- **`/ml/:taskType/:datasetId`** - a per-task configuration form
+  (`ClassificationConfigForm`/`ForecastConfigForm`/`SegmentationConfigForm`/
+  `AnomalyConfigForm` in `src/components/ml/`), pre-filled with the
+  backend's suggested columns but fully editable, that trains a real model
+  and navigates to its results on success.
+- **`/ml/runs/:runId`** - results for one run, dispatched to a per-task
+  view (`ClassificationResultsView`/`ForecastResultsView`/
+  `SegmentationResultsView`/`AnomalyResultsView`) covering model comparison,
+  metrics, and task-specific visualization (confusion matrix + feature
+  importance for classification; historical/forecast chart with confidence
+  band for forecasting; cluster size/feature-mean charts for segmentation;
+  anomaly score chart + flagged-record table for anomaly detection) - plus
+  a `PredictAction` that calls the real predict endpoint and renders its
+  real response.
+- **`/ml/runs`** - full run history across every task.
+
+The union type `MLRunResultsOut.results` (see backend's Phase 5 notes) is
+generated as a real 4-member Pydantic union, not `dict[string, unknown]` -
+`frontend/src/api/types.ts` narrows it to the concrete result type using
+the sibling `run.task_type` field via `isClassificationResults()` /
+`isForecastResults()` / `isSegmentationResults()` / `isAnomalyResults()`
+(and the equivalent `is*Predictions()` helpers for prediction responses),
+documented inline as to why that narrowing pattern exists instead of a
+schema-level discriminator.
+
 ## Regenerating the typed API client
 
 Whenever the backend's routes or response models change, regenerate the
@@ -129,6 +170,11 @@ src/
     datasets/           - DatasetList (Delete button gated by dataset:delete), QualityScoreBadge
     dataset-detail/     - SchemaTable, QualityPanel, PreviewTable, LineageTimeline
     dataset-detail/kpi/ - KpiDashboard (Breakdown/Trend gated by dashboard:configure), StatTile, BreakdownChart, TrendChart
+    ml/                 - Phase 5: task metadata, 4 config forms, 4 results
+                          views, shared charts (CandidateModelTable,
+                          FeatureImportanceChart, ConfusionMatrix,
+                          ForecastChart, ClusterCharts, AnomalyScoreChart),
+                          FeatureColumnPicker, PredictAction
     common/             - LoadingSpinner, ErrorMessage, EmptyState
   pages/
     DatasetsPage.tsx        - upload + dataset list ("/")
@@ -136,6 +182,11 @@ src/
     LoginPage.tsx, RegisterPage.tsx  - Phase 4
     admin/UsersPage.tsx     - user management ("/admin/users", user:read)
     admin/AuditLogPage.tsx  - audit log viewer ("/admin/audit", audit:read)
+    ml/                     - Phase 5: MlTaskSelectionPage ("/ml"),
+                              MlDatasetSelectionPage ("/ml/:taskType"),
+                              MlConfigurePage ("/ml/:taskType/:datasetId"),
+                              MlRunPage ("/ml/runs/:runId"),
+                              MlRunsHistoryPage ("/ml/runs")
   test/
     renderWithProviders.tsx  - render helper wrapping MemoryRouter + AuthProvider
     authTestUtils.ts         - fakeUser()/setFakeToken() for auth-aware component tests
@@ -161,3 +212,18 @@ src/
   but the create-user form is intentionally minimal (name/email/password
   only, always starts as Viewer) - role assignment is a separate,
   deliberate follow-up action, not part of creation.
+
+**Phase 5:**
+- Training blocks the whole configure-page form until the backend responds
+  (no progress bar/percentage - the backend itself trains synchronously,
+  see backend/README.md's Phase 5 section) - acceptable at this project's
+  dataset sizes, flagged as a Phase 6 concern if that changes.
+- Segmentation's per-cluster visualization is a feature-means bar chart,
+  not a 2D scatter plot - a genuine scatter would need dimensionality
+  reduction (PCA/t-SNE) for datasets with more than 2 feature columns,
+  which wasn't justified for this phase; the bar chart generalizes to any
+  number of features without that added complexity.
+- No way to re-run a training job with different settings from the results
+  page directly - going back to the configure page and submitting again
+  creates a new, independent run rather than an editable one (consistent
+  with runs being immutable once trained).

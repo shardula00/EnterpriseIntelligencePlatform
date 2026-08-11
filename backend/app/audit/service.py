@@ -34,6 +34,7 @@ class AuditAction:
     USER_DEACTIVATED = "user.deactivated"
     USER_DELETED = "user.deleted"
     USER_ROLE_CHANGED = "user.role_changed"
+    ML_MODEL_TRAINED = "ml.model_trained"
 
 
 # Case-insensitive metadata keys that are never written, no matter what a

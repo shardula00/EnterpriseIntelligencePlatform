@@ -74,9 +74,9 @@ Full reasoning, component responsibilities, and data flow are in
 | 1 | Local infra & backend skeleton — Docker Compose, Postgres/pgvector, FastAPI, CI |
 | 2 | Data platform — ingestion, schema detection, profiling, quality, lineage |
 | 3 | BI layer — KPI engine, React/Vite/Tailwind dashboards |
-| 4 | Auth & RBAC — users, roles, permissions, audit log (**current**) |
-| 5 | Classical ML — churn, forecasting, segmentation, anomaly detection, MLflow |
-| 6 | MLOps hardening — monitoring, drift detection, serving |
+| 4 | Auth & RBAC — users, roles, permissions, audit log |
+| 5 | Classical ML — churn, forecasting, segmentation, anomaly detection (**current**) |
+| 6 | MLOps hardening — model registry, monitoring, drift detection, async serving |
 | 7 | GenAI/RAG foundation — embeddings, pgvector retrieval, configurable LLM provider |
 | 8 | NL analytics — Text-to-SQL, AI explanations, answer evaluation |
 | 9 | Knowledge graph — entities/relationships, hybrid RAG+KG retrieval |
@@ -128,7 +128,7 @@ EnterpriseIntelligencePlatform/
 ├── DEVELOPMENT_PLAN.md      — phased implementation plan
 ├── .gitignore
 ├── .python-version          — pins Python 3.12 for the backend/ML environment
-├── backend/                 — FastAPI app: ingestion (Phase 2), KPI engine (Phase 3), auth/RBAC/audit (Phase 4)
+├── backend/                 — FastAPI app: ingestion (Phase 2), KPI engine (Phase 3), auth/RBAC/audit (Phase 4), classical ML (Phase 5)
 ├── frontend/                — React + TS + Vite + Tailwind app (Phase 3), auth-aware (Phase 4)
 ├── data/                    — local dataset working area (gitignored contents)
 ├── infra/                   — docker-compose.yml (Postgres + pgvector)
@@ -137,15 +137,24 @@ EnterpriseIntelligencePlatform/
 
 ## Status
 
-**Phase 4 — Authentication, RBAC & Audit Logging.** The platform is now a
-real multi-user application: register or log in, and every dataset/KPI/
-user/audit route requires a valid session and the right permission -
-enforced server-side, not just hidden in the UI. Three roles (Admin,
-Analyst, Viewer) with a fine-grained permission catalog; an admin console
-for managing users and roles; a queryable audit log of every
-security-relevant action. All of Phase 1–3's ingestion, KPI, and dashboard
-functionality keeps working exactly as before, now behind that boundary.
-See [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) for what comes next.
+**Phase 5 — Classical Machine Learning.** The platform can now train and
+evaluate real ML models on any uploaded dataset: binary classification
+(e.g. churn), time-series forecasting, customer segmentation, and anomaly
+detection. Every dataset is checked for task suitability with specific,
+human-readable reasons before training is even offered; preprocessing is
+fit only on the training split (never the full dataset) to prevent
+leakage; model comparison uses a task-appropriate primary metric (ROC-AUC,
+not accuracy, for classification; MAE for forecasting); explainability
+comes from permutation importance, phrased as association, never
+causation. A `/ml` section in the frontend covers task selection, dataset
+suitability, per-task configuration, training, model comparison, and
+per-task visualizations, gated by three new permissions (`ml:read`,
+`ml:train`, `ml:predict`). Trained model artifacts are stored locally,
+versioned by run; only metadata and results are persisted in the database
+— this is deliberately not a full model registry (see Phase 6). All of
+Phase 1–4's ingestion, KPI, and auth/RBAC/audit functionality keeps
+working exactly as before. See [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md)
+for what comes next.
 
 ## Local development principles
 

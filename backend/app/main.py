@@ -8,6 +8,7 @@ from app.api.auth import router as auth_router
 from app.api.datasets import router as datasets_router
 from app.api.health import router as health_router
 from app.api.kpis import router as kpis_router
+from app.api.ml import router as ml_router
 from app.api.users import catalog_router as users_catalog_router
 from app.api.users import router as users_router
 from app.config import get_settings
@@ -32,3 +33,4 @@ app.include_router(users_catalog_router)
 app.include_router(audit_router)
 app.include_router(datasets_router)
 app.include_router(kpis_router)
+app.include_router(ml_router)

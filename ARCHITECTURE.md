@@ -92,13 +92,59 @@ into a validated, profiled, quality-scored relational form, with lineage
 metadata describing where every derived value came from. This is the
 foundation everything else — BI, ML, RAG — reads from.
 
-### 3.4 ML platform
-Classical ML models (churn, forecasting, segmentation, anomaly detection)
-trained with scikit-learn/XGBoost (PyTorch only if a specific model
-genuinely needs it — e.g. a sequence model for forecasting). MLflow tracks
-experiments and hosts the model registry. Training code is decoupled from
-serving code; the API layer loads registered model versions to serve
-predictions.
+### 3.4 ML platform (implemented Phase 5)
+Four classical ML tasks — binary classification, time-series forecasting,
+customer segmentation, anomaly detection — implemented entirely with
+scikit-learn (`backend/app/ml/`). No XGBoost/PyTorch: `RandomForestClassifier`/
+`Regressor` and `HistGradientBoosting*` already cover the "something
+stronger than a linear baseline" need without adding a heavyweight
+dependency (see `app/ml/__init__.py`'s module map for the full reasoning).
+
+The module is organized around a strict separation that mirrors the rest of
+the backend:
+
+- **Dataset suitability** (`suitability.py`) — a purely metadata-driven
+  check (no data loading) answering "can this dataset even attempt this
+  task," with specific, human-readable rejection reasons (e.g. "Forecasting
+  cannot be performed because no datetime column was detected"). This
+  drives the frontend's task/dataset picker and independently re-validates
+  the exact columns a training request names, before any data is touched.
+- **Feature engineering** (`feature_engineering.py`) — sklearn
+  `ColumnTransformer`/`Pipeline` builders, always returned *unfitted*.
+  Leakage prevention is structural, not a convention to remember: every
+  task module calls `.fit()` exactly once, on the training split only, and
+  `.transform()` (never refit) on anything held out or predicted later.
+- **Per-task modules** (`classification.py`, `forecasting.py`,
+  `segmentation.py`, `anomaly_detection.py`) — each trains 2-3 candidate
+  models, selects a winner by a metric appropriate to that task (ROC-AUC
+  for classification, since accuracy is misleading under class imbalance;
+  MAE for forecasting; silhouette score for segmentation), and returns both
+  a results payload and a reloadable artifact. Forecasting's splits are
+  always chronological — never shuffled — with a genuine backtest (train on
+  all-but-the-last-`horizon` periods, score against the real values for
+  those periods) kept separate from the unscored production forecast that
+  extends past the dataset's real last date.
+- **Explainability** (`explainability.py`) — permutation importance
+  (`sklearn.inspection`), not SHAP: it works identically regardless of
+  whether the underlying model exposes `feature_importances_`/`coef_`,
+  which matters because every task compares heterogeneous model types.
+  Reported as association ("higher X associated with higher predicted
+  probability"), never causation.
+- **Orchestration** (`service.py`) — the only module `app/api/ml.py` calls;
+  ties dataset lookup, suitability validation, data loading (reusing Phase
+  2's ingestion table-reconstruction, not a second ingestion path),
+  training, and persistence together.
+- **Artifacts** (`artifacts.py`) — joblib files under `Settings.
+  ml_artifacts_dir`, one per run, gitignored and never committed. The
+  database (`ml_runs` table) stores only metadata and the full results
+  payload as JSONB, plus a path to the artifact — **deliberately not a
+  full model registry** (no versioning "the same" model across runs, no
+  promotion workflow, no MLflow). That's Phase 6 (MLOps).
+
+Training is synchronous end-to-end: an API request blocks until the model
+is fit. Acceptable at this project's data scale (documented limitation, not
+an oversight) — see `backend/README.md`'s Phase 5 section for the specific
+numbers and what Phase 6 should do about it (async job execution).
 
 ### 3.5 AI platform
 - **RAG**: document ingestion → chunking → embeddings (Hugging Face model,

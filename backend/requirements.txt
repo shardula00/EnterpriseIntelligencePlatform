@@ -19,3 +19,8 @@ python-multipart==0.0.32
 pyjwt==2.13.0
 argon2-cffi==25.1.0
 email-validator==2.3.0
+
+# Classical ML (Phase 5). No XGBoost/SHAP - HistGradientBoosting and
+# permutation_importance already ship in scikit-learn, which avoids two
+# additional heavyweight/C-extension dependencies. See app/ml/ docstrings.
+scikit-learn==1.9.0

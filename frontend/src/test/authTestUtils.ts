@@ -14,9 +14,22 @@ export const ALL_PERMISSIONS: PermissionName[] = [
   'user:update',
   'user:delete',
   'audit:read',
+  'ml:read',
+  'ml:train',
+  'ml:predict',
 ]
 
-export const VIEWER_PERMISSIONS: PermissionName[] = ['dataset:read', 'dashboard:read']
+export const VIEWER_PERMISSIONS: PermissionName[] = ['dataset:read', 'dashboard:read', 'ml:read']
+
+export const ANALYST_PERMISSIONS: PermissionName[] = [
+  'dataset:read',
+  'dataset:create',
+  'dashboard:read',
+  'dashboard:configure',
+  'ml:read',
+  'ml:train',
+  'ml:predict',
+]
 
 export function fakeUser(overrides: Partial<CurrentUser> = {}): CurrentUser {
   return {

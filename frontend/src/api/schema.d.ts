@@ -365,10 +365,206 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/datasets/{dataset_id}/ml/suitability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Suitability */
+        get: operations["get_suitability_datasets__dataset_id__ml_suitability_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ml/train/classification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Train Classification */
+        post: operations["train_classification_ml_train_classification_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ml/train/forecasting": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Train Forecasting */
+        post: operations["train_forecasting_ml_train_forecasting_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ml/train/segmentation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Train Segmentation */
+        post: operations["train_segmentation_ml_train_segmentation_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ml/train/anomaly-detection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Train Anomaly Detection */
+        post: operations["train_anomaly_detection_ml_train_anomaly_detection_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ml/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Runs */
+        get: operations["list_runs_ml_runs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ml/runs/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Run */
+        get: operations["get_run_ml_runs__run_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ml/runs/{run_id}/predict": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Predict */
+        post: operations["predict_ml_runs__run_id__predict_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AnomalyPredictionOut */
+        AnomalyPredictionOut: {
+            /** Row Index */
+            row_index: number;
+            /** Anomaly Score */
+            anomaly_score: number;
+            /** Is Anomaly */
+            is_anomaly: boolean;
+        };
+        /** AnomalyRecordOut */
+        AnomalyRecordOut: {
+            /** Row Index */
+            row_index: number;
+            /** Anomaly Score */
+            anomaly_score: number;
+            /** Is Anomaly */
+            is_anomaly: boolean;
+            /** Values */
+            values: {
+                [key: string]: unknown;
+            };
+        };
+        /** AnomalyResultsOut */
+        AnomalyResultsOut: {
+            /** Feature Columns */
+            feature_columns: string[];
+            /** Contamination */
+            contamination: number;
+            /** Anomaly Count */
+            anomaly_count: number;
+            /** Anomaly Percentage */
+            anomaly_percentage: number;
+            /** Anomalous Records */
+            anomalous_records: components["schemas"]["AnomalyRecordOut"][];
+            /** Score Summary */
+            score_summary: {
+                [key: string]: number;
+            };
+            /** Random Seed */
+            random_seed: number;
+            /** Was Sampled */
+            was_sampled: boolean;
+        };
+        /** AnomalyTrainRequest */
+        AnomalyTrainRequest: {
+            /**
+             * Dataset Id
+             * Format: uuid
+             */
+            dataset_id: string;
+            /** Feature Columns */
+            feature_columns?: string[] | null;
+            /**
+             * Contamination
+             * @default 0.05
+             */
+            contamination: number;
+            /** Random Seed */
+            random_seed?: number | null;
+        };
         /** AssignRolesRequest */
         AssignRolesRequest: {
             /** Role Names */
@@ -445,6 +641,99 @@ export interface components {
             /** Total Categories */
             total_categories: number;
         };
+        /** CandidateModelMetrics */
+        CandidateModelMetrics: {
+            /** Model Name */
+            model_name: string;
+            /** Metrics */
+            metrics: {
+                [key: string]: number;
+            };
+        };
+        /** ClassificationPredictionOut */
+        ClassificationPredictionOut: {
+            /** Row Index */
+            row_index: number;
+            /** Predicted */
+            predicted: string;
+            /** Probability */
+            probability: number;
+        };
+        /** ClassificationResultsOut */
+        ClassificationResultsOut: {
+            /** Target Column */
+            target_column: string;
+            /** Feature Columns */
+            feature_columns: string[];
+            /** Class Distribution */
+            class_distribution: {
+                [key: string]: number;
+            };
+            /** Candidate Models */
+            candidate_models: components["schemas"]["CandidateModelMetrics"][];
+            /** Selected Model */
+            selected_model: string;
+            /** Primary Metric */
+            primary_metric: string;
+            /** Primary Metric Rationale */
+            primary_metric_rationale: string;
+            /** Metrics */
+            metrics: {
+                [key: string]: number;
+            };
+            confusion_matrix: components["schemas"]["ConfusionMatrixOut"];
+            /** Feature Importance */
+            feature_importance: components["schemas"]["FeatureImportanceOut"][];
+            /** Sample Predictions */
+            sample_predictions: components["schemas"]["ClassificationSamplePrediction"][];
+            /** Test Size */
+            test_size: number;
+            /** Random Seed */
+            random_seed: number;
+            /** Was Sampled */
+            was_sampled: boolean;
+        };
+        /** ClassificationSamplePrediction */
+        ClassificationSamplePrediction: {
+            /** Row Index */
+            row_index: number;
+            /** Actual */
+            actual: string;
+            /** Predicted */
+            predicted: string;
+            /** Probability */
+            probability: number;
+        };
+        /** ClassificationTrainRequest */
+        ClassificationTrainRequest: {
+            /**
+             * Dataset Id
+             * Format: uuid
+             */
+            dataset_id: string;
+            /** Target Column */
+            target_column: string;
+            /** Feature Columns */
+            feature_columns?: string[] | null;
+            /**
+             * Test Size
+             * @default 0.25
+             */
+            test_size: number;
+            /** Random Seed */
+            random_seed?: number | null;
+        };
+        /** ClusterProfileOut */
+        ClusterProfileOut: {
+            /** Cluster */
+            cluster: number;
+            /** Size */
+            size: number;
+            /** Feature Means */
+            feature_means: {
+                [key: string]: number;
+            };
+        };
         /** ColumnInfo */
         ColumnInfo: {
             /** Position */
@@ -469,6 +758,13 @@ export interface components {
             mean_value: number | null;
             /** Sample Values */
             sample_values: unknown[] | null;
+        };
+        /** ConfusionMatrixOut */
+        ConfusionMatrixOut: {
+            /** Labels */
+            labels: string[];
+            /** Matrix */
+            matrix: number[][];
         };
         /** DatasetDetail */
         DatasetDetail: {
@@ -503,6 +799,18 @@ export interface components {
             /** Columns */
             columns: components["schemas"]["ColumnInfo"][];
         };
+        /** DatasetSuitabilityOut */
+        DatasetSuitabilityOut: {
+            /**
+             * Dataset Id
+             * Format: uuid
+             */
+            dataset_id: string;
+            /** Row Count */
+            row_count: number;
+            /** Tasks */
+            tasks: components["schemas"]["TaskSuitabilityOut"][];
+        };
         /** DatasetSummary */
         DatasetSummary: {
             /**
@@ -533,6 +841,72 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** FeatureImportanceOut */
+        FeatureImportanceOut: {
+            /** Feature */
+            feature: string;
+            /** Importance */
+            importance: number;
+            /** Direction */
+            direction?: string | null;
+        };
+        /** ForecastPointOut */
+        ForecastPointOut: {
+            /** Period */
+            period: string;
+            /** Value */
+            value: number;
+            /** Lower */
+            lower?: number | null;
+            /** Upper */
+            upper?: number | null;
+        };
+        /** ForecastResultsOut */
+        ForecastResultsOut: {
+            /** Datetime Column */
+            datetime_column: string;
+            /** Target Column */
+            target_column: string;
+            /** Horizon */
+            horizon: number;
+            /** Candidate Models */
+            candidate_models: components["schemas"]["CandidateModelMetrics"][];
+            /** Selected Model */
+            selected_model: string;
+            /** Primary Metric */
+            primary_metric: string;
+            /** Metrics */
+            metrics: {
+                [key: string]: number;
+            };
+            /** Historical */
+            historical: components["schemas"]["TimeSeriesPointOut"][];
+            /** Forecast */
+            forecast: components["schemas"]["ForecastPointOut"][];
+            /** Has Confidence Interval */
+            has_confidence_interval: boolean;
+            /** Random Seed */
+            random_seed: number;
+        };
+        /** ForecastTrainRequest */
+        ForecastTrainRequest: {
+            /**
+             * Dataset Id
+             * Format: uuid
+             */
+            dataset_id: string;
+            /** Datetime Column */
+            datetime_column: string;
+            /** Target Column */
+            target_column: string;
+            /**
+             * Horizon
+             * @default 14
+             */
+            horizon: number;
+            /** Random Seed */
+            random_seed?: number | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -611,6 +985,47 @@ export interface components {
             /** Password */
             password: string;
         };
+        /** MLRunOut */
+        MLRunOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Dataset Id
+             * Format: uuid
+             */
+            dataset_id: string;
+            /**
+             * Task Type
+             * @enum {string}
+             */
+            task_type: "classification" | "forecasting" | "segmentation" | "anomaly_detection";
+            /** Model Name */
+            model_name: string;
+            /** Status */
+            status: string;
+            /** Configuration */
+            configuration: {
+                [key: string]: unknown;
+            };
+            /** Created By */
+            created_by: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Completed At */
+            completed_at: string | null;
+        };
+        /** MLRunResultsOut */
+        MLRunResultsOut: {
+            run: components["schemas"]["MLRunOut"];
+            /** Results */
+            results: components["schemas"]["ClassificationResultsOut"] | components["schemas"]["ForecastResultsOut"] | components["schemas"]["SegmentationResultsOut"] | components["schemas"]["AnomalyResultsOut"];
+        };
         /** PermissionOut */
         PermissionOut: {
             /** Id */
@@ -619,6 +1034,30 @@ export interface components {
             name: string;
             /** Description */
             description: string | null;
+        };
+        /** PredictRequest */
+        PredictRequest: {
+            /** Horizon */
+            horizon?: number | null;
+        };
+        /** PredictionResponseOut */
+        PredictionResponseOut: {
+            /**
+             * Run Id
+             * Format: uuid
+             */
+            run_id: string;
+            /**
+             * Task Type
+             * @enum {string}
+             */
+            task_type: "classification" | "forecasting" | "segmentation" | "anomaly_detection";
+            /** Predictions */
+            predictions: components["schemas"]["ClassificationPredictionOut"][] | components["schemas"]["SegmentationPredictionOut"][] | components["schemas"]["AnomalyPredictionOut"][] | components["schemas"]["ForecastPointOut"][];
+            /** Summary */
+            summary: {
+                [key: string]: unknown;
+            };
         };
         /** PreviewOut */
         PreviewOut: {
@@ -679,6 +1118,76 @@ export interface components {
             name: string;
             /** Description */
             description: string | null;
+        };
+        /** SegmentationPredictionOut */
+        SegmentationPredictionOut: {
+            /** Row Index */
+            row_index: number;
+            /** Cluster */
+            cluster: number;
+        };
+        /** SegmentationResultsOut */
+        SegmentationResultsOut: {
+            /** Feature Columns */
+            feature_columns: string[];
+            /** N Clusters */
+            n_clusters: number;
+            /** Silhouette Score */
+            silhouette_score: number;
+            /** Cluster Sizes */
+            cluster_sizes: {
+                [key: string]: number;
+            };
+            /** Cluster Profiles */
+            cluster_profiles: components["schemas"]["ClusterProfileOut"][];
+            /** Cluster Centers */
+            cluster_centers: number[][];
+            /** Random Seed */
+            random_seed: number;
+            /** Was Sampled */
+            was_sampled: boolean;
+        };
+        /** SegmentationTrainRequest */
+        SegmentationTrainRequest: {
+            /**
+             * Dataset Id
+             * Format: uuid
+             */
+            dataset_id: string;
+            /** Feature Columns */
+            feature_columns?: string[] | null;
+            /**
+             * N Clusters
+             * @default 4
+             */
+            n_clusters: number;
+            /** Random Seed */
+            random_seed?: number | null;
+        };
+        /** TaskSuitabilityOut */
+        TaskSuitabilityOut: {
+            /**
+             * Task Type
+             * @enum {string}
+             */
+            task_type: "classification" | "forecasting" | "segmentation" | "anomaly_detection";
+            /** Suitable */
+            suitable: boolean;
+            /** Reasons */
+            reasons: string[];
+            /** Suggested Target Columns */
+            suggested_target_columns?: string[];
+            /** Suggested Datetime Columns */
+            suggested_datetime_columns?: string[];
+            /** Suggested Feature Columns */
+            suggested_feature_columns?: string[];
+        };
+        /** TimeSeriesPointOut */
+        TimeSeriesPointOut: {
+            /** Period */
+            period: string;
+            /** Value */
+            value: number;
         };
         /** TokenResponse */
         TokenResponse: {
@@ -1530,6 +2039,267 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TrendOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_suitability_datasets__dataset_id__ml_suitability_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dataset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DatasetSuitabilityOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    train_classification_ml_train_classification_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClassificationTrainRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MLRunResultsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    train_forecasting_ml_train_forecasting_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ForecastTrainRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MLRunResultsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    train_segmentation_ml_train_segmentation_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SegmentationTrainRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MLRunResultsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    train_anomaly_detection_ml_train_anomaly_detection_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnomalyTrainRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MLRunResultsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_runs_ml_runs_get: {
+        parameters: {
+            query?: {
+                dataset_id?: string | null;
+                task_type?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MLRunOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_run_ml_runs__run_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MLRunResultsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    predict_ml_runs__run_id__predict_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PredictRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PredictionResponseOut"];
                 };
             };
             /** @description Validation Error */

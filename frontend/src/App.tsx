@@ -8,6 +8,11 @@ import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { UsersPage } from './pages/admin/UsersPage'
 import { AuditLogPage } from './pages/admin/AuditLogPage'
+import { MlTaskSelectionPage } from './pages/ml/MlTaskSelectionPage'
+import { MlDatasetSelectionPage } from './pages/ml/MlDatasetSelectionPage'
+import { MlConfigurePage } from './pages/ml/MlConfigurePage'
+import { MlRunPage } from './pages/ml/MlRunPage'
+import { MlRunsHistoryPage } from './pages/ml/MlRunsHistoryPage'
 
 export default function App() {
   return (
@@ -46,6 +51,47 @@ export default function App() {
           element={
             <RequirePermission permission="audit:read">
               <AuditLogPage />
+            </RequirePermission>
+          }
+        />
+
+        <Route
+          path="/ml"
+          element={
+            <RequirePermission permission="ml:read">
+              <MlTaskSelectionPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="/ml/runs"
+          element={
+            <RequirePermission permission="ml:read">
+              <MlRunsHistoryPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="/ml/runs/:runId"
+          element={
+            <RequirePermission permission="ml:read">
+              <MlRunPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="/ml/:taskType"
+          element={
+            <RequirePermission permission="ml:read">
+              <MlDatasetSelectionPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="/ml/:taskType/:datasetId"
+          element={
+            <RequirePermission permission="ml:read">
+              <MlConfigurePage />
             </RequirePermission>
           }
         />

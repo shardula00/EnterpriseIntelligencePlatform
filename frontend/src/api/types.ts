@@ -42,3 +42,101 @@ export type PermissionName =
   | 'user:update'
   | 'user:delete'
   | 'audit:read'
+  | 'ml:read'
+  | 'ml:train'
+  | 'ml:predict'
+
+// ---------------------------------------------------------------------------
+// Classical ML (Phase 5)
+// ---------------------------------------------------------------------------
+
+export type TaskSuitability = components['schemas']['TaskSuitabilityOut']
+/** No standalone "TaskType" schema exists - Pydantic's Literal type alias
+ * gets inlined wherever it's used rather than named, so this is derived
+ * from one of those usage sites instead. */
+export type MlTaskType = TaskSuitability['task_type']
+export type DatasetSuitability = components['schemas']['DatasetSuitabilityOut']
+
+export type ClassificationTrainRequest = components['schemas']['ClassificationTrainRequest']
+export type ForecastTrainRequest = components['schemas']['ForecastTrainRequest']
+export type SegmentationTrainRequest = components['schemas']['SegmentationTrainRequest']
+export type AnomalyTrainRequest = components['schemas']['AnomalyTrainRequest']
+
+export type CandidateModelMetrics = components['schemas']['CandidateModelMetrics']
+export type FeatureImportance = components['schemas']['FeatureImportanceOut']
+
+export type ConfusionMatrix = components['schemas']['ConfusionMatrixOut']
+export type ClassificationSamplePrediction = components['schemas']['ClassificationSamplePrediction']
+export type ClassificationResults = components['schemas']['ClassificationResultsOut']
+
+export type TimeSeriesPoint = components['schemas']['TimeSeriesPointOut']
+export type ForecastPoint = components['schemas']['ForecastPointOut']
+export type ForecastResults = components['schemas']['ForecastResultsOut']
+
+export type ClusterProfile = components['schemas']['ClusterProfileOut']
+export type SegmentationResults = components['schemas']['SegmentationResultsOut']
+
+export type AnomalyRecord = components['schemas']['AnomalyRecordOut']
+export type AnomalyResults = components['schemas']['AnomalyResultsOut']
+
+export type MLRun = components['schemas']['MLRunOut']
+export type MLRunResults = components['schemas']['MLRunResultsOut']
+export type PredictionResponse = components['schemas']['PredictionResponseOut']
+
+export type ClassificationPrediction = components['schemas']['ClassificationPredictionOut']
+export type SegmentationPrediction = components['schemas']['SegmentationPredictionOut']
+export type AnomalyPrediction = components['schemas']['AnomalyPredictionOut']
+
+/** Narrows MLRunResults.results to the shape matching its own task_type -
+ * the union isn't discriminated at the schema level (see
+ * backend/app/ml/schemas.py's comment on MLRunResultsOut), so callers
+ * narrow using the sibling `run.task_type` field instead. */
+export function isClassificationResults(
+  run: MLRunResults,
+): run is MLRunResults & { results: ClassificationResults } {
+  return run.run.task_type === 'classification'
+}
+
+export function isForecastResults(
+  run: MLRunResults,
+): run is MLRunResults & { results: ForecastResults } {
+  return run.run.task_type === 'forecasting'
+}
+
+export function isSegmentationResults(
+  run: MLRunResults,
+): run is MLRunResults & { results: SegmentationResults } {
+  return run.run.task_type === 'segmentation'
+}
+
+export function isAnomalyResults(
+  run: MLRunResults,
+): run is MLRunResults & { results: AnomalyResults } {
+  return run.run.task_type === 'anomaly_detection'
+}
+
+/** Same narrowing pattern for PredictionResponse.predictions - see the
+ * comment above. */
+export function isClassificationPredictions(
+  response: PredictionResponse,
+): response is PredictionResponse & { predictions: ClassificationPrediction[] } {
+  return response.task_type === 'classification'
+}
+
+export function isForecastPredictions(
+  response: PredictionResponse,
+): response is PredictionResponse & { predictions: ForecastPoint[] } {
+  return response.task_type === 'forecasting'
+}
+
+export function isSegmentationPredictions(
+  response: PredictionResponse,
+): response is PredictionResponse & { predictions: SegmentationPrediction[] } {
+  return response.task_type === 'segmentation'
+}
+
+export function isAnomalyPredictions(
+  response: PredictionResponse,
+): response is PredictionResponse & { predictions: AnomalyPrediction[] } {
+  return response.task_type === 'anomaly_detection'
+}

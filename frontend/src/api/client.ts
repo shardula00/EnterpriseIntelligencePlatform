@@ -266,3 +266,106 @@ export async function getTrend(
   })
   return unwrap(result)
 }
+
+// ---------------------------------------------------------------------------
+// Classical ML (Phase 5)
+// ---------------------------------------------------------------------------
+
+export async function getMlSuitability(datasetId: string) {
+  const result = await client.GET('/datasets/{dataset_id}/ml/suitability', {
+    params: { path: { dataset_id: datasetId } },
+  })
+  return unwrap(result)
+}
+
+export async function trainClassification(body: {
+  datasetId: string
+  targetColumn: string
+  featureColumns?: string[] | null
+  testSize?: number
+  randomSeed?: number | null
+}) {
+  const result = await client.POST('/ml/train/classification', {
+    body: {
+      dataset_id: body.datasetId,
+      target_column: body.targetColumn,
+      feature_columns: body.featureColumns ?? null,
+      test_size: body.testSize ?? 0.25,
+      random_seed: body.randomSeed ?? null,
+    },
+  })
+  return unwrap(result)
+}
+
+export async function trainForecasting(body: {
+  datasetId: string
+  datetimeColumn: string
+  targetColumn: string
+  horizon?: number
+  randomSeed?: number | null
+}) {
+  const result = await client.POST('/ml/train/forecasting', {
+    body: {
+      dataset_id: body.datasetId,
+      datetime_column: body.datetimeColumn,
+      target_column: body.targetColumn,
+      horizon: body.horizon ?? 14,
+      random_seed: body.randomSeed ?? null,
+    },
+  })
+  return unwrap(result)
+}
+
+export async function trainSegmentation(body: {
+  datasetId: string
+  featureColumns?: string[] | null
+  nClusters?: number
+  randomSeed?: number | null
+}) {
+  const result = await client.POST('/ml/train/segmentation', {
+    body: {
+      dataset_id: body.datasetId,
+      feature_columns: body.featureColumns ?? null,
+      n_clusters: body.nClusters ?? 4,
+      random_seed: body.randomSeed ?? null,
+    },
+  })
+  return unwrap(result)
+}
+
+export async function trainAnomalyDetection(body: {
+  datasetId: string
+  featureColumns?: string[] | null
+  contamination?: number
+  randomSeed?: number | null
+}) {
+  const result = await client.POST('/ml/train/anomaly-detection', {
+    body: {
+      dataset_id: body.datasetId,
+      feature_columns: body.featureColumns ?? null,
+      contamination: body.contamination ?? 0.05,
+      random_seed: body.randomSeed ?? null,
+    },
+  })
+  return unwrap(result)
+}
+
+export async function listMlRuns(params: { datasetId?: string; taskType?: string } = {}) {
+  const result = await client.GET('/ml/runs', {
+    params: { query: { dataset_id: params.datasetId, task_type: params.taskType } },
+  })
+  return unwrap(result)
+}
+
+export async function getMlRun(runId: string) {
+  const result = await client.GET('/ml/runs/{run_id}', { params: { path: { run_id: runId } } })
+  return unwrap(result)
+}
+
+export async function predictMlRun(runId: string, horizon?: number) {
+  const result = await client.POST('/ml/runs/{run_id}/predict', {
+    params: { path: { run_id: runId } },
+    body: { horizon: horizon ?? null },
+  })
+  return unwrap(result)
+}

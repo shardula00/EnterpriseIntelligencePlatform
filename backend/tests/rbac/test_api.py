@@ -240,7 +240,9 @@ def test_roles_catalog_lists_the_three_fixed_roles(client):
     assert {r["name"] for r in response.json()} == {"ADMIN", "ANALYST", "VIEWER"}
 
 
-def test_permissions_catalog_lists_all_ten_permissions(client):
+def test_permissions_catalog_lists_all_thirteen_permissions(client):
+    # 10 from Phase 4 (dataset/dashboard/user/audit) + 3 added in Phase 5
+    # (ml:read, ml:train, ml:predict) - see app/rbac/seed.py.
     response = client.get("/permissions")
     assert response.status_code == 200
-    assert len(response.json()) == 10
+    assert len(response.json()) == 13

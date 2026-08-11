@@ -7,8 +7,11 @@ detection -> profiling -> quality scoring -> a real Postgres table ->
 lineage). Phase 3 added a generic KPI engine (`app/bi/`) and CORS support
 for the new React frontend. Phase 4 added authentication, RBAC, and audit
 logging (`app/auth/`, `app/rbac/`, `app/audit/`) - every dataset/KPI/user/
-audit route now requires a valid JWT and the right permission. Further
-domain features (ML, RAG, etc.) arrive in later phases per
+audit route now requires a valid JWT and the right permission. Phase 5 added
+classical ML (`app/ml/`) - dataset suitability checking, leakage-safe
+training/evaluation for 4 tasks (classification, forecasting, segmentation,
+anomaly detection), and prediction serving from persisted artifacts. Further
+domain features (RAG, MLOps hardening, etc.) arrive in later phases per
 [DEVELOPMENT_PLAN.md](../DEVELOPMENT_PLAN.md).
 
 ## Prerequisites
@@ -221,6 +224,74 @@ the row is written, regardless of what a caller passed in.
 curl "http://localhost:8000/audit-logs?limit=20&action=dataset.deleted" -H "Authorization: Bearer $token"  # needs audit:read
 ```
 
+## Classical ML (Phase 5)
+
+Four tasks, generically over any suitable uploaded dataset (never hardcoded
+to a specific business schema): binary classification, time-series
+forecasting, customer segmentation, anomaly detection. See
+`app/ml/__init__.py`'s module map and `ARCHITECTURE.md` §3.4 for the full
+design rationale; summary:
+
+- **Suitability first.** `GET /datasets/{id}/ml/suitability` reports, for
+  all 4 tasks at once, whether the dataset qualifies and - if not - exactly
+  why (e.g. "Forecasting cannot be performed because no datetime column was
+  detected"), plus suggested columns for whichever tasks *are* suitable.
+  This is metadata-only (no data loading), so it's cheap to call for every
+  dataset up front.
+- **Leakage prevention is structural.** Every task's preprocessing is an
+  sklearn `Pipeline`/`ColumnTransformer`, fit exactly once on the training
+  split; the test split and any later prediction data only ever go through
+  `.transform()`. Forecasting's train/test split is always chronological -
+  never shuffled - with the shown metrics coming from a genuine backtest
+  (score the model against real held-out periods) kept separate from the
+  unscored production forecast that extends past the last real date.
+- **Model selection is metric-appropriate, not just highest-accuracy.**
+  ROC-AUC for classification (churn-shaped problems are usually imbalanced),
+  MAE for forecasting, silhouette score for segmentation. See each task
+  module's `PRIMARY_METRIC`/`PRIMARY_METRIC_RATIONALE`.
+- **Explainability via permutation importance**, not SHAP - works
+  identically across every candidate model type, and is always phrased as
+  association ("higher X associated with higher predicted probability"),
+  never causation.
+- **No model registry.** `ml_runs` stores per-run metadata and the full
+  results payload (JSONB); the fitted model itself is a joblib file under
+  `Settings.ml_artifacts_dir` (gitignored). There is no versioning of "the
+  same" model across retrains and no promotion workflow - that's Phase 6.
+- **Training is synchronous** - an API request blocks until the model is
+  fit. Fine at this project's data scale (see `Settings.
+  ml_max_training_rows`, default 50,000 - forecasting is exempt from
+  downsampling since row order is the signal); flagged for Phase 6 to
+  revisit with async job execution if that changes.
+
+```powershell
+# Suitability (needs ml:read):
+curl http://localhost:8000/datasets/<id>/ml/suitability -H "Authorization: Bearer $token"
+
+# Train (needs ml:train) - one endpoint per task:
+curl -X POST http://localhost:8000/ml/train/classification -H "Authorization: Bearer $token" `
+  -H "Content-Type: application/json" -d '{"dataset_id":"<id>","target_column":"churned"}'
+curl -X POST http://localhost:8000/ml/train/forecasting -H "Authorization: Bearer $token" `
+  -H "Content-Type: application/json" -d '{"dataset_id":"<id>","datetime_column":"order_date","target_column":"sales_amount","horizon":14}'
+curl -X POST http://localhost:8000/ml/train/segmentation -H "Authorization: Bearer $token" `
+  -H "Content-Type: application/json" -d '{"dataset_id":"<id>","n_clusters":4}'
+curl -X POST http://localhost:8000/ml/train/anomaly-detection -H "Authorization: Bearer $token" `
+  -H "Content-Type: application/json" -d '{"dataset_id":"<id>","contamination":0.05}'
+
+# Run history/results (needs ml:read), predict from a trained run (needs ml:predict):
+curl http://localhost:8000/ml/runs -H "Authorization: Bearer $token"
+curl http://localhost:8000/ml/runs/<run_id> -H "Authorization: Bearer $token"
+curl -X POST http://localhost:8000/ml/runs/<run_id>/predict -H "Authorization: Bearer $token" `
+  -H "Content-Type: application/json" -d '{}'
+```
+
+Permissions (see `app/rbac/seed.py`): `ml:read` (VIEWER and up), `ml:train`
+and `ml:predict` (ANALYST and up). New synthetic fixture datasets for
+exercising all 4 tasks (never a modification of the existing Phase 2
+fixtures) live in `tests/fixtures/ml_*.csv` - `ml_churn_sample.csv`
+(classification), `ml_sales_timeseries_sample.csv` (forecasting),
+`ml_customers_segmentation_sample.csv` (segmentation),
+`ml_transactions_anomaly_sample.csv` (anomaly detection).
+
 ## CORS (Phase 3)
 
 The React dev server (`http://localhost:5173`) runs on a different origin
@@ -248,12 +319,19 @@ app/
   rbac/         - authorization: roles/permissions catalog + seeding,
                   effective-permission resolution, require_permission(...)
   audit/        - centralized audit event recording + querying
+  ml/           - classical ML: suitability, feature engineering, one
+                  module per task (classification/forecasting/segmentation/
+                  anomaly_detection), explainability, artifacts, service
+                  orchestration - see app/ml/__init__.py's module map
 migrations/     - Alembic environment and version history
 scripts/        - bootstrap_admin.py (dev-only first-admin creation)
-tests/          - pytest suite (tests/auth/, tests/rbac/, tests/audit/ for
-                  Phase 4; the `client` fixture is admin-authenticated by
-                  default, so every pre-Phase-4 test kept working unchanged)
-tests/fixtures/ - small synthetic datasets used by the ingestion/KPI tests
+tests/          - pytest suite (tests/auth/, tests/rbac/, tests/audit/,
+                  tests/ml/ for their respective phases; the `client`
+                  fixture is admin-authenticated by default, so every
+                  pre-Phase-4 test kept working unchanged)
+tests/fixtures/ - small synthetic datasets used by the ingestion/KPI/ML
+                  tests (ml_*.csv are dedicated to Phase 5, never a reused
+                  or modified Phase 2 fixture)
 ```
 
 ## Known security limitations (Phase 4, disclosed not hidden)
@@ -280,3 +358,10 @@ tests/fixtures/ - small synthetic datasets used by the ingestion/KPI tests
 `starlette`/`fastapi` versions, not from our code, and doesn't affect test
 results. Not addressed in Phase 1; revisit if it becomes a hard failure in
 a future dependency bump.
+
+`pytest` also prints a `DeprecationWarning` from inside `joblib`'s own
+pickling code (`numpy_pickle.py`, `array.shape = self.shape`) whenever an ML
+run's artifact is saved/loaded, triggered by the installed `numpy`/`joblib`
+version combination - third-party internals, not our code; joblib 1.5.3 is
+already the latest release. Harmless; revisit only if a future joblib
+release resolves it upstream.
