@@ -1,0 +1,60 @@
+name: backend-ci
+
+on:
+  push:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    # Same image used locally via infra/docker-compose.yml, so CI exercises
+    # the same Postgres+pgvector pipeline as a developer's machine, not a
+    # mocked substitute.
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: eip_user
+          POSTGRES_PASSWORD: eip_dev_password
+          POSTGRES_DB: eip_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U eip_user -d eip_dev"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql+psycopg://eip_user:eip_dev_password@localhost:5432/eip_dev
+      APP_ENV: ci
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Lint (ruff)
+        run: ruff check .
+
+      - name: Apply database migrations
+        run: alembic upgrade head
+
+      - name: Run tests
+        run: pytest -v

@@ -1,0 +1,33 @@
+# Local development infrastructure for the Enterprise Intelligence Platform.
+#
+# Usage (run from this directory so Compose picks up infra/.env automatically):
+#   cp .env.example .env
+#   docker compose up -d
+#
+# Phase 1 provides only Postgres+pgvector. Later phases add MLflow, and
+# eventually the backend/frontend containers themselves.
+
+name: eip
+
+services:
+  postgres:
+    # pgvector/pgvector ships Postgres with the pgvector extension already
+    # compiled in - the vanilla `postgres` image does not include it.
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-eip_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-eip_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-eip_dev}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-eip_user} -d ${POSTGRES_DB:-eip_dev}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_data:

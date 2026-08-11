@@ -1,0 +1,21 @@
+[project]
+name = "eip-backend"
+version = "0.1.0"
+description = "Enterprise Intelligence Platform - backend API"
+requires-python = ">=3.11"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+# Alembic generates versions/*.py from its own template, not ours - don't
+# hold auto-generated migration files to hand-authored style rules.
+extend-exclude = ["migrations/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+# B008: FastAPI's `Depends(...)` in a default argument is the framework's
+# idiomatic dependency-injection pattern, not the footgun this rule targets.
+ignore = ["B008"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
