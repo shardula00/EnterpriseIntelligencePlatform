@@ -10,8 +10,11 @@ logging (`app/auth/`, `app/rbac/`, `app/audit/`) - every dataset/KPI/user/
 audit route now requires a valid JWT and the right permission. Phase 5 added
 classical ML (`app/ml/`) - dataset suitability checking, leakage-safe
 training/evaluation for 4 tasks (classification, forecasting, segmentation,
-anomaly detection), and prediction serving from persisted artifacts. Further
-domain features (RAG, MLOps hardening, etc.) arrive in later phases per
+anomaly detection), and prediction serving from persisted artifacts. Phase 6
+added MLOps hardening (`app/mlops/`) - a native model registry with a
+promotion lifecycle, PSI-based data drift detection, per-task performance
+monitoring, and an internal alerting/monitoring-events log. Further domain
+features (RAG, etc.) arrive in later phases per
 [DEVELOPMENT_PLAN.md](../DEVELOPMENT_PLAN.md).
 
 ## Prerequisites
@@ -253,15 +256,17 @@ design rationale; summary:
   identically across every candidate model type, and is always phrased as
   association ("higher X associated with higher predicted probability"),
   never causation.
-- **No model registry.** `ml_runs` stores per-run metadata and the full
-  results payload (JSONB); the fitted model itself is a joblib file under
-  `Settings.ml_artifacts_dir` (gitignored). There is no versioning of "the
-  same" model across retrains and no promotion workflow - that's Phase 6.
+- **`ml_runs` stores per-run metadata and the full results payload**
+  (JSONB); the fitted model itself is a joblib file under `Settings.
+  ml_artifacts_dir` (gitignored). Versioning "the same" model across
+  retrains and a promotion workflow are a separate concern, built on top
+  in Phase 6 - see below.
 - **Training is synchronous** - an API request blocks until the model is
   fit. Fine at this project's data scale (see `Settings.
   ml_max_training_rows`, default 50,000 - forecasting is exempt from
-  downsampling since row order is the signal); flagged for Phase 6 to
-  revisit with async job execution if that changes.
+  downsampling since row order is the signal); Phase 6 re-evaluated this
+  and kept it synchronous rather than adding a job queue speculatively -
+  see below.
 
 ```powershell
 # Suitability (needs ml:read):
@@ -291,6 +296,115 @@ fixtures) live in `tests/fixtures/ml_*.csv` - `ml_churn_sample.csv`
 (classification), `ml_sales_timeseries_sample.csv` (forecasting),
 `ml_customers_segmentation_sample.csv` (segmentation),
 `ml_transactions_anomaly_sample.csv` (anomaly detection).
+
+## MLOps: model registry, drift & monitoring (Phase 6)
+
+Turns "a model that trained once" into a versioned, lifecycle-managed,
+monitored artifact - without MLflow, Celery, or Redis. See
+`app/mlops/__init__.py`'s module map and `ARCHITECTURE.md` §3.4a for the
+full design rationale; summary:
+
+- **Registry, not a copy of `MLRun`.** `POST /mlops/versions` registers a
+  completed run as a `ModelVersion`, joined to it via `ml_run_id` - the
+  version row stores only what `MLRun` doesn't already (version number,
+  lifecycle status, artifact checksum, promotion metadata), never a
+  duplicate of `configuration`/`results`.
+- **Lifecycle is forward-only**: `candidate` → `staging` → `production` →
+  `archived`, one stage at a time (no skipping straight to production).
+  Enforced in `registry_service.py` *and*, independently, by a Postgres
+  partial unique index allowing at most one `production` row per
+  (dataset, task type) family - so a bug in the service layer alone could
+  never leave two production versions live for the same family. Promoting
+  a new version auto-archives the family's previous production version in
+  two sequential commits, not one batched flush (SQLAlchemy can submit two
+  ORM updates as one multi-row `UPDATE`, which Postgres's partial index
+  evaluates mid-batch - a partial index cannot be made `DEFERRABLE`, so
+  this had to be fixed at the transaction-shape level). Archived versions
+  are never deleted - lineage stays fully inspectable via
+  `GET /mlops/versions/{id}`.
+- **Drift detection via PSI** (`drift.py`) - Population Stability Index,
+  quantile-binned for numeric features (10 bins, outer edges at ±infinity),
+  category-union-based for categorical ones. Published thresholds: PSI ≥
+  0.10 → `warning`, PSI ≥ 0.25 → `drift` (configurable via `Settings.
+  drift_psi_warning_threshold`/`drift_psi_severe_threshold`). Handles
+  missing baseline/current data, unseen categories, and constant-baseline
+  columns (a dedicated `constant_value_deviation` method - PSI itself is
+  undefined for a one-point distribution) without raising.
+- **Performance monitoring is task-aware** (`monitoring.py`) - real
+  ground-truth metrics for classification (ROC-AUC) and forecasting
+  (MAE/RMSE/MAPE); honestly-labeled unsupervised proxy signals for
+  segmentation (silhouette score) and anomaly detection (flagged-rate),
+  surfaced as `ground_truth_available: false` rather than presented as
+  equivalent to a real accuracy figure. Thresholds are direction-aware
+  (higher-is-better vs. lower-is-better) and configurable
+  (`Settings.performance_degradation_warning_threshold`/
+  `performance_degradation_severe_threshold`).
+- **Never auto-retrains or auto-promotes.** A drift or performance check
+  only ever writes a `MonitoringEvent` (with a normalized
+  `info`/`warning`/`critical` severity) and returns a result - remediation
+  is always a separate, explicit call to the existing train/register/
+  promote endpoints.
+
+```powershell
+# Register a completed run as a model version (needs mlops:evaluate):
+curl -X POST http://localhost:8000/mlops/model-versions -H "Authorization: Bearer $token" `
+  -H "Content-Type: application/json" -d '{"ml_run_id":"<run_id>"}'
+
+# List / view (needs mlops:read):
+curl http://localhost:8000/mlops/model-versions -H "Authorization: Bearer $token"
+curl http://localhost:8000/mlops/model-versions/<version_id> -H "Authorization: Bearer $token"
+
+# Promote one stage at a time / archive (needs mlops:promote, Admin only):
+curl -X POST http://localhost:8000/mlops/model-versions/<version_id>/promote -H "Authorization: Bearer $token" `
+  -H "Content-Type: application/json" -d '{"target_status":"staging"}'
+curl -X POST http://localhost:8000/mlops/model-versions/<version_id>/archive -H "Authorization: Bearer $token"
+
+# Drift / performance checks against a new dataset (needs mlops:evaluate) - never retrains:
+curl -X POST http://localhost:8000/mlops/model-versions/<version_id>/drift-check -H "Authorization: Bearer $token" `
+  -H "Content-Type: application/json" -d '{"dataset_id":"<new_dataset_id>"}'
+curl -X POST http://localhost:8000/mlops/model-versions/<version_id>/performance-check -H "Authorization: Bearer $token" `
+  -H "Content-Type: application/json" -d '{"dataset_id":"<new_dataset_id>"}'
+
+# All recorded monitoring events, optionally filtered (needs mlops:read):
+curl "http://localhost:8000/mlops/monitoring-events?severity=critical" -H "Authorization: Bearer $token"
+```
+
+Permissions (see `app/rbac/seed.py`): `mlops:read` (VIEWER and up),
+`mlops:evaluate` (ANALYST and up - register versions, run drift/performance
+checks), `mlops:promote` (ADMIN only - promote/archive, mirroring
+`dataset:delete`'s admin-only governance action). Every register/promote/
+archive/drift-check/performance-check call is also written to the audit
+log (`app/audit/service.py`'s `mlops.*` actions).
+
+Four new synthetic fixtures for exercising drift/degradation detection
+live in `tests/fixtures/ml_churn_monitoring_*.csv` - `stable` (near-zero
+drift baseline), `moderate_drift` (a few features shift enough to warn,
+not enough to flag as severe), `severe_drift` (multiple features drift
+past the severe threshold), `degraded` (recomputed classification metrics
+fall well past the degradation threshold).
+
+### Known limitations (Phase 6, disclosed not hidden)
+
+- **Drift/performance checks are synchronous**, same tradeoff as Phase 5
+  training - fine at fixture/portfolio data scale, revisit with a job queue
+  only if dataset sizes genuinely grow past what a single request should
+  block on.
+- **No scheduled/automatic monitoring.** A drift or performance check only
+  ever runs when a user explicitly calls the endpoint (or clicks the
+  button in the frontend) - there is no cron-style "check production
+  models nightly" job yet. Documented as a natural next step, not
+  something silently assumed to exist.
+- **No external alert channel.** `MonitoringEvent` severity is designed so
+  a future email/Slack/PagerDuty integration can subscribe to "severity ≥
+  X" without touching the detection engine, but no such integration exists
+  yet - alerts are visible only via the API and the frontend's alerts page.
+- **A performance check requires the training run's target column to be
+  present** in the new dataset (it needs real labels to recompute a
+  ground-truth metric) - a dataset missing it is rejected with a clear
+  4xx, not a best-effort partial result. A drift check has no such
+  requirement: a feature column absent from the new dataset is treated the
+  same as a fully-missing column (see the missing-value handling above),
+  since drift detection never needs labels.
 
 ## CORS (Phase 3)
 
@@ -323,15 +437,20 @@ app/
                   module per task (classification/forecasting/segmentation/
                   anomaly_detection), explainability, artifacts, service
                   orchestration - see app/ml/__init__.py's module map
+  mlops/        - registry (registry_service.py), drift (drift.py),
+                  performance monitoring (monitoring.py), orchestration
+                  (service.py) - deliberately parallel to, not inside,
+                  app/ml/ - see app/mlops/__init__.py's module map
 migrations/     - Alembic environment and version history
 scripts/        - bootstrap_admin.py (dev-only first-admin creation)
 tests/          - pytest suite (tests/auth/, tests/rbac/, tests/audit/,
-                  tests/ml/ for their respective phases; the `client`
-                  fixture is admin-authenticated by default, so every
-                  pre-Phase-4 test kept working unchanged)
-tests/fixtures/ - small synthetic datasets used by the ingestion/KPI/ML
-                  tests (ml_*.csv are dedicated to Phase 5, never a reused
-                  or modified Phase 2 fixture)
+                  tests/ml/, tests/mlops/ for their respective phases; the
+                  `client` fixture is admin-authenticated by default, so
+                  every pre-Phase-4 test kept working unchanged)
+tests/fixtures/ - small synthetic datasets used by the ingestion/KPI/ML/
+                  MLOps tests (ml_*.csv are dedicated to Phase 5,
+                  ml_churn_monitoring_*.csv to Phase 6 - never a reused or
+                  modified Phase 2 fixture)
 ```
 
 ## Known security limitations (Phase 4, disclosed not hidden)

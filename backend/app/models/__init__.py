@@ -8,6 +8,8 @@ from app.models.app_metadata import AppMetadata
 from app.models.audit import AuditLog
 from app.models.dataset import Dataset, DatasetColumn, DatasetLineageEvent, DatasetQualityIssue
 from app.models.ml_run import MLRun
+from app.models.model_version import ModelVersion
+from app.models.monitoring_event import MonitoringEvent
 from app.models.user import Permission, Role, RolePermission, User, UserRole
 
 __all__ = [
@@ -18,6 +20,8 @@ __all__ = [
     "DatasetLineageEvent",
     "DatasetQualityIssue",
     "MLRun",
+    "ModelVersion",
+    "MonitoringEvent",
     "Permission",
     "Role",
     "RolePermission",

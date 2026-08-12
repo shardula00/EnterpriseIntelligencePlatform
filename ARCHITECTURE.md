@@ -44,14 +44,14 @@ Application Services (business logic, orchestration)
 │  Data Platform          ML Platform          AI Platform    │
 │  ─────────────          ──────────           ───────────    │
 │  - Ingestion            - Training            - RAG           │
-│    (CSV/Excel/JSON/API)   (sklearn/XGBoost)     (retrieval +    │
-│  - Schema detection     - Registry (MLflow)      generation)   │
-│  - Profiling            - Prediction serving   - Agents          │
-│  - Validation &         - Monitoring / drift     (Data/Analytics/│
-│    quality scoring        detection               ML/Research/  │
-│  - Transformation                                 Viz/Decision/  │
-│  - Lineage tracking                               Risk agents)   │
-│                                                  - Knowledge Graph│
+│    (CSV/Excel/JSON/API)   (scikit-learn)        (retrieval +    │
+│  - Schema detection     - Native registry        generation)   │
+│  - Profiling              (versioning +        - Agents          │
+│  - Validation &           lifecycle)             (Data/Analytics/│
+│    quality scoring      - Prediction serving      ML/Research/  │
+│  - Transformation       - Drift detection         Viz/Decision/  │
+│  - Lineage tracking     - Perf. monitoring        Risk agents)   │
+│                         - Monitoring events     - Knowledge Graph│
 │                                                  - Text-to-SQL     │
 │                                                                    │
 └───────────────────────────────────────────────────────────┘
@@ -137,14 +137,68 @@ the backend:
 - **Artifacts** (`artifacts.py`) — joblib files under `Settings.
   ml_artifacts_dir`, one per run, gitignored and never committed. The
   database (`ml_runs` table) stores only metadata and the full results
-  payload as JSONB, plus a path to the artifact — **deliberately not a
-  full model registry** (no versioning "the same" model across runs, no
-  promotion workflow, no MLflow). That's Phase 6 (MLOps).
+  payload as JSONB, plus a path to the artifact. Versioning "the same"
+  model across runs and a promotion workflow are a separate concern, built
+  in Phase 6 as `app/mlops/` (§3.4a) rather than folded in here.
 
 Training is synchronous end-to-end: an API request blocks until the model
 is fit. Acceptable at this project's data scale (documented limitation, not
 an oversight) — see `backend/README.md`'s Phase 5 section for the specific
-numbers and what Phase 6 should do about it (async job execution).
+numbers. Phase 6 re-evaluated this and explicitly kept it synchronous (see
+§3.4a) rather than introducing a job queue speculatively.
+
+### 3.4a MLOps: registry, drift, monitoring (implemented Phase 6)
+A native registry and monitoring layer (`backend/app/mlops/`), deliberately
+parallel to — not inside — `app/ml/`, since "did this run train correctly"
+(Phase 5) and "can this specific version be trusted over time" (Phase 6)
+are different questions with different lifecycles.
+
+- **Registry** (`registry_service.py`) — a `ModelVersion` row per
+  registered `MLRun`, joined via `ml_run_id` rather than duplicating its
+  configuration/results. A forward-only lifecycle (`candidate` → `staging`
+  → `production` → `archived`) is enforced in the service layer (each
+  transition validated one stage at a time) and, independently, by a
+  Postgres partial unique index allowing at most one `production` row per
+  (dataset, task type) family — defense in depth against a bug ever
+  promoting two conflicting versions live at once. Promoting a new version
+  auto-archives the family's previous production version in two sequential
+  commits (see `backend/README.md` for why one batched flush is unsafe
+  here); archived versions are never deleted, so lineage stays fully
+  inspectable.
+- **Drift detection** (`drift.py`) — Population Stability Index, the
+  standard interpretable drift statistic in production ML systems: PSI
+  compares a baseline and current distribution across shared bins
+  (quantile bins for numeric features, the union of observed categories for
+  categorical ones) and produces one number with conventional thresholds
+  (0.10 warning, 0.25 drift), rather than a p-value that still needs a
+  separate business decision layered on top. Handles missing values, unseen
+  categories, and constant-baseline columns (a dedicated
+  `constant_value_deviation` method, since PSI is undefined for a
+  one-point distribution) without crashing.
+- **Performance monitoring** (`monitoring.py`) — compares a version's
+  training-time primary metric against the same metric recomputed on a new
+  dataset: ROC-AUC for classification, MAE/RMSE/MAPE for forecasting (both
+  genuine ground truth), silhouette score for segmentation, flagged-rate
+  for anomaly detection (both unsupervised proxy signals, explicitly marked
+  `ground_truth_available: false` rather than presented as equivalent to
+  the supervised metrics). Thresholds are direction-aware (higher-is-better
+  vs. lower-is-better) and configurable via `Settings`, never hidden inside
+  a function body.
+- **Monitoring events & alerting** (`service.py`, `MonitoringEvent` model)
+  — every drift/performance check writes one event with a normalized
+  severity (`info`/`warning`/`critical`), independent of each domain's own
+  richer status vocabulary (`stable`/`warning`/`drift`,
+  `stable`/`warning`/`degraded`/`not_applicable`), specifically so a future
+  alert channel (email/Slack/PagerDuty) can subscribe to "severity ≥
+  warning" without knowing which detector produced the event. No such
+  channel exists yet — events are queryable via API and rendered on a
+  global alerts page and each version's detail page, which is the full
+  scope of "alerting" this phase needed.
+- **Never auto-remediates.** Detecting drift or degradation only ever
+  produces a record; retraining, rollback, or re-promotion stays a
+  separate, explicit, human-triggered action through the existing
+  train/register/promote endpoints — deliberately, so an automated false
+  positive can never retrain or demote a model on its own.
 
 ### 3.5 AI platform
 - **RAG**: document ingestion → chunking → embeddings (Hugging Face model,
@@ -193,10 +247,11 @@ including the frontend's `localStorage` token-storage tradeoff, is in
 `backend/README.md`'s and `frontend/README.md`'s Phase 4 sections.
 
 ### 3.8 MLOps & CI/CD
-MLflow for tracking/registry (runs locally, backed by Postgres or local
-files — decided in Phase 1). GitHub Actions for lint/test/build on every
-push. Docker Compose for local multi-container orchestration; Dockerfiles
-per service for eventual cloud deployment.
+Model registry, drift detection, and performance monitoring are a native
+implementation (`backend/app/mlops/`, §3.4a) rather than MLflow or another
+external tracker — see §5/§6 for why. GitHub Actions for lint/test/build on
+every push. Docker Compose for local multi-container orchestration;
+Dockerfiles per service for eventual cloud deployment.
 
 ## 4. Data flow (representative example)
 
@@ -205,9 +260,10 @@ per service for eventual cloud deployment.
    Postgres with lineage metadata recording the source file and transform.
 3. BI layer computes KPIs from the now-trusted relational data, rendered as
    dashboards.
-4. A churn model (ML Platform), trained earlier via MLflow-tracked
-   experiments, scores the same customer table; scores are stored back and
-   surfaced in the dashboard and to the Decision layer.
+4. A churn model (ML Platform), trained earlier and registered/promoted
+   through the native model registry, scores the same customer table;
+   scores are stored back and surfaced in the dashboard and to the
+   Decision layer.
 5. A user asks a natural-language question ("why did churn risk increase in
    Q2 for enterprise customers?") → Text-to-SQL + RAG (AI Platform) retrieve
    relevant structured data and supporting documents (with citations) → an
@@ -222,7 +278,8 @@ per service for eventual cloud deployment.
 |---|---|
 | **PostgreSQL + pgvector** over a dedicated vector DB | One system to run, back up, and reason about locally. pgvector is sufficient at portfolio data volumes and keeps relational + vector data joinable in a single query — which directly matters for the RAG-vs-hybrid-KG research comparison. |
 | **FastAPI** over Flask/Django | Async support, Pydantic-native validation, automatic OpenAPI docs that double as the frontend's API contract. |
-| **MLflow** over a hosted experiment tracker | Free, runs locally, no account/API key needed, good enough model registry for this scale. |
+| **Native model registry** over MLflow (decided Phase 6) | The platform only needs to track its own `MLRun`s, not arbitrary third-party experiments — a `ModelVersion` table joined to the existing `ml_runs` table covers every field the registry needs (config, metrics, dataset, seed, lineage) with zero new infrastructure to run, secure, or back up. Revisit only if a future phase needs cross-tool experiment tracking MLflow specializes in. |
+| **Population Stability Index** for drift over a statistical hypothesis test | PSI produces one interpretable number with conventional thresholds and degrades gracefully with missing values/small samples; a KS-test/chi-squared test would give a p-value that still needs a separate, undocumented business decision on top to become an actionable "is this drift." |
 | **Monolithic backend with domain modules** over microservices | No independent scaling/deploy need yet; microservices would add distributed-systems complexity that teaches infrastructure lessons unrelated to this project's actual learning goals. |
 | **Configurable LLM provider, local-first** over a single paid API | Keeps the project runnable at zero cost; demonstrates provider-abstraction as a real engineering concern; avoids a hard dependency on any one vendor. |
 | **GitHub Actions** over other CI | Free for public/private repos at this scale, integrates directly with GitHub hosting. |
@@ -238,17 +295,21 @@ per service for eventual cloud deployment.
 | **Neo4j (or other graph DB)** | The knowledge graph (Phase 9) will first be attempted as relational tables in Postgres (entities/relationships as rows) to avoid a second database. | Revisit in Phase 9 if graph traversal queries prove awkward in SQL. |
 | **Paid LLM APIs by default** | Violates the near-zero-cost constraint; local models (via Hugging Face/Ollama) are the default. | Paid APIs remain available as an *opt-in* configured provider, never a requirement. |
 | **A second database engine** | PostgreSQL + pgvector covers relational and vector needs together. | Only if a specific workload (e.g. very large-scale vector search) outgrows pgvector. |
-| **Celery / task queues** | No long-running async job need yet; FastAPI's background tasks or synchronous processing suffice through early phases. | Revisit if ingestion or model training needs true background job queuing with retries. |
+| **Celery / task queues** | No long-running async job need yet; FastAPI's background tasks or synchronous processing suffice through early phases, including Phase 6's drift/performance checks. | Revisit if ingestion, model training, or monitoring checks need true background job queuing with retries at larger data scale. |
 | **Separate microservices per platform (Data/ML/AI)** | Would add deployment/networking complexity before there's a scaling reason to. | Revisit only with a concrete independent-scaling or independent-deploy justification. |
+| **MLflow (or another external experiment tracker/registry)** | Phase 6's registry only needs to version this platform's own training runs, not arbitrary experiments from other tools; a native `ModelVersion` table reusing the existing `ml_runs` data covers the full spec with no new service to run. | Revisit only if a future phase needs cross-tool experiment comparison or a team-facing tracking UI beyond this platform's own frontend. |
+| **Auto-remediation on drift/degradation** | Phase 6 deliberately only ever *records* a drift or performance event; retraining/rollback/promotion stays a separate, explicit, human-triggered action. | Not currently planned — an automated actor retraining or demoting a production model on an unreviewed signal is a risk this project chooses not to take on. |
 
 ## 7. Open questions (to resolve in later phases, not now)
 
 - Knowledge graph storage: relational-tables-in-Postgres vs. a graph
   library vs. (last resort) a dedicated graph DB — decide in Phase 9.
-- MLflow backend store: local file store vs. Postgres-backed — decide in
-  Phase 1 when Docker Compose is defined.
 - Agent orchestration framework: hand-rolled vs. a library (e.g.
   LangGraph) — decide in Phase 10 once the agents' actual coordination
   needs are concrete.
+
+*(Resolved: the model registry backend-store question this section
+originally listed for Phase 1 was answered in Phase 6 — no MLflow, no
+separate store; see §3.4a, §5, §6.)*
 
 These are explicitly deferred, not accidentally omitted.

@@ -324,25 +324,130 @@ bug).
 
 ---
 
-## Phase 6 — MLOps Hardening
+## Phase 6 — MLOps Hardening ✅ complete
 
 **Objective:** Move from "a model that works once" to "a model system that
 can be trusted over time."
 
-**Deliverables:**
-- MLflow (or equivalent) wired in as an actual model registry — Phase 5
-  deliberately persisted only per-run metadata/artifacts, not a registry;
-  this phase builds the versioning/promotion layer on top of that
-- Model versioning/promotion workflow (staging → production in registry)
-- Basic data drift detection (comparing incoming data distribution to
-  training distribution)
-- Basic model performance monitoring over time
-- Alerting/logging when drift or degradation is detected
-- Async training execution (Phase 5's training is synchronous; revisit if
-  dataset sizes/training time have grown enough to justify a job queue)
+**Deliverables (as actually built — see implementation notes below for why
+this differs from the original plan):**
+- A native `ModelVersion` registry (`app/models/model_version.py`) —
+  every completed `MLRun` can be registered as a version, preserving full
+  lineage (dataset → config/results via `ml_run_id` → artifact checksum →
+  version → lifecycle state) without duplicating anything `MLRun` already
+  stores
+- A forward-only lifecycle state machine — candidate → staging →
+  production → archived — enforced both in the service layer and by a
+  Postgres partial unique index guaranteeing at most one `production`
+  version per (dataset, task type) family; promoting a new version
+  auto-archives the family's previous production version, and history for
+  both remains fully inspectable
+- Data drift detection (`app/mlops/drift.py`) via Population Stability
+  Index — quantile-binned for numeric features, category-union-based for
+  categorical — with published, documented thresholds (0.10 warning, 0.25
+  drift) and a dedicated code path for constant-baseline columns, where PSI
+  is mathematically undefined
+- Model performance monitoring (`app/mlops/monitoring.py`) per task type —
+  real ground-truth metrics for classification (ROC-AUC) and forecasting
+  (MAE/RMSE/MAPE), explicitly-labeled unsupervised proxy signals for
+  segmentation (silhouette) and anomaly detection (flagged-rate) — with a
+  `ground_truth_available` flag surfaced through the API and UI rather than
+  papering over the difference
+- An internal `MonitoringEvent` log recording every drift/performance
+  check with a normalized severity (info/warning/critical), queryable via
+  API and rendered as a global alerts page and per-version history — built
+  so a future email/Slack/cloud channel can subscribe to it without
+  touching the detection engine
+- 8 new REST endpoints (register/list/detail/promote/archive/drift-check/
+  performance-check/monitoring-events) gated by 3 new RBAC permissions
+  (`mlops:read`, `mlops:evaluate`, `mlops:promote`) added through the
+  existing seed mechanism, every lifecycle/check action dual-written to the
+  audit log
+- Frontend `/mlops` section extending the existing ML UI (not a second
+  design system): Model Registry list, Model Version Detail (reusing
+  Phase 5's exact per-task results components), Drift Monitoring panel,
+  Performance Monitoring panel, and a global Monitoring Alerts page
+- 4 new synthetic monitoring fixtures (stable / moderate drift / severe
+  drift / degraded performance) plus 49 new backend tests and 28 new/updated
+  frontend tests
+- Async training execution was evaluated and explicitly **not** built —
+  see implementation notes
 
 **Definition of done:** Feeding the system a deliberately shifted dataset
-triggers a detectable drift signal, visible via API/logs.
+triggers a detectable drift signal, visible via API and frontend, and
+recorded as an auditable event — verified with a real browser walkthrough:
+train → register → promote candidate → staging → production → run a drift
+check against a shifted dataset → drift detected → run a performance check
+against a degraded dataset → degradation detected → both visible on the
+version detail page and the global alerts page, 0 console/page/network
+errors. A second model version trained on the same dataset/task family
+correctly becomes the new production version while the first is
+auto-archived and remains fully inspectable (verified by test and by the
+registry API). The full pre-Phase-6 backend and frontend suites, and all
+four Phase 5 ML workflows, were re-verified end-to-end and pass unmodified
+in intent.
+
+**Implementation notes (decided during Phase 6, not in the original plan):**
+- **No MLflow.** A registry that only needs to track *this platform's own*
+  `MLRun`s — not arbitrary third-party experiments, not distributed
+  training, not a UI of its own — doesn't need an external experiment-
+  tracking server. A single `ModelVersion` table joined to the existing
+  `ml_runs` table via `ml_run_id` covers every piece of metadata the spec
+  asked for (config, metrics, dataset, seed, timestamps) with zero
+  duplication and zero new infrastructure to run/secure/back up.
+- **No Celery/Redis.** Drift checks and performance checks run against
+  fixture-scale datasets (hundreds to low thousands of rows) inside a
+  single synchronous request, consistent with Phase 5's decision on
+  training itself. Documented as a limitation for a future phase to revisit
+  if dataset sizes grow — not silently deferred.
+- **`ModelVersion` never duplicates `MLRun.configuration`/`results`.** The
+  detail API joins them via `ml_run_id`; the frontend's
+  `ModelVersionDetailPage` reuses Phase 5's exact
+  `ClassificationResultsView`/`ForecastResultsView`/`SegmentationResultsView`/
+  `AnomalyResultsView` components rather than re-rendering metrics from
+  scratch — the same visual language, not a second one.
+- **PSI (Population Stability Index), not a statistical hypothesis test.**
+  PSI is the standard, widely-published drift metric in production ML
+  systems specifically because it's interpretable as a single number with
+  conventional thresholds, doesn't require distributional assumptions, and
+  degrades gracefully with missing values/unseen categories/small samples —
+  a KS-test or chi-squared test would give a p-value that's harder to turn
+  into an actionable "is this drift" decision at arbitrary sample sizes.
+- **A dedicated `constant_value_deviation` method for constant-baseline
+  columns.** PSI divides by each bin's baseline proportion; a column with
+  a single distinct value in the baseline has one bin holding 100% of the
+  mass, making PSI either undefined or meaningless the moment any new value
+  appears. Detected explicitly and reported as "the fraction of new rows
+  that differ from the constant baseline value," never silently producing
+  a `0.0`/"stable" false negative.
+- **`ground_truth_available: bool` is a first-class field, not an
+  afterthought.** Segmentation's silhouette score and anomaly detection's
+  flagged-rate are real, useful signals, but neither is "accuracy against a
+  known correct answer" the way classification/forecasting are — the field
+  (and a distinct UI badge) says so honestly instead of presenting all four
+  task types' numbers as the same kind of measurement.
+- **Two sequential commits on promote-to-production, not one batched
+  flush.** Auto-archiving the previous production version and promoting the
+  new one are two ORM updates in the same request; SQLAlchemy can submit
+  them as one batched multi-row `UPDATE`, and Postgres evaluates the
+  family's partial unique index mid-batch — occasionally raising a spurious
+  `IntegrityError` depending on statement ordering. Splitting into two
+  `db.commit()` calls (archive-and-commit, then promote-and-commit) avoids
+  the race; Postgres cannot make a partial unique index `DEFERRABLE` (only
+  full constraints support that), so this had to be fixed at the
+  transaction-shape level, not with a deferred-constraint flag.
+- **Drift/performance checks notify their parent page via an `onChecked`
+  callback.** Caught by the real browser E2E, not a unit test: the model
+  version detail page's "monitoring history" section fetches once on
+  mount and has no reason to know a check just ran in a sibling panel.
+  Without an explicit callback, a newly-recorded event was invisible on
+  the same page until a manual reload — fixed by having
+  `DriftCheckPanel`/`PerformanceCheckPanel` call an optional `onChecked`
+  prop on success, wired to the history list's own `reload()`.
+- Existing Phase 0–5 tests needed only the same kind of intentional catalog
+  update Phase 4 and 5 each required: `tests/rbac/test_api.py` and
+  `tests/rbac/test_service.py`'s hardcoded permission-count/VIEWER/ANALYST
+  assertions were updated to include the 3 new `mlops:*` permissions.
 
 ---
 

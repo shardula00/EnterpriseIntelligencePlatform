@@ -13,6 +13,9 @@ import { MlDatasetSelectionPage } from './pages/ml/MlDatasetSelectionPage'
 import { MlConfigurePage } from './pages/ml/MlConfigurePage'
 import { MlRunPage } from './pages/ml/MlRunPage'
 import { MlRunsHistoryPage } from './pages/ml/MlRunsHistoryPage'
+import { ModelRegistryPage } from './pages/mlops/ModelRegistryPage'
+import { ModelVersionDetailPage } from './pages/mlops/ModelVersionDetailPage'
+import { MonitoringEventsPage } from './pages/mlops/MonitoringEventsPage'
 
 export default function App() {
   return (
@@ -92,6 +95,31 @@ export default function App() {
           element={
             <RequirePermission permission="ml:read">
               <MlConfigurePage />
+            </RequirePermission>
+          }
+        />
+
+        <Route
+          path="/mlops"
+          element={
+            <RequirePermission permission="mlops:read">
+              <ModelRegistryPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="/mlops/alerts"
+          element={
+            <RequirePermission permission="mlops:read">
+              <MonitoringEventsPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="/mlops/versions/:versionId"
+          element={
+            <RequirePermission permission="mlops:read">
+              <ModelVersionDetailPage />
             </RequirePermission>
           }
         />

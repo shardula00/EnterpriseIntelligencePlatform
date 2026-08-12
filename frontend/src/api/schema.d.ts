@@ -501,6 +501,126 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/mlops/model-versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Model Versions */
+        get: operations["list_model_versions_mlops_model_versions_get"];
+        put?: never;
+        /** Register Model Version */
+        post: operations["register_model_version_mlops_model_versions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mlops/model-versions/{version_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Model Version */
+        get: operations["get_model_version_mlops_model_versions__version_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mlops/model-versions/{version_id}/promote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Promote Model Version */
+        post: operations["promote_model_version_mlops_model_versions__version_id__promote_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mlops/model-versions/{version_id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Archive Model Version */
+        post: operations["archive_model_version_mlops_model_versions__version_id__archive_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mlops/model-versions/{version_id}/drift-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Run Drift Check */
+        post: operations["run_drift_check_mlops_model_versions__version_id__drift_check_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mlops/model-versions/{version_id}/performance-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Run Performance Check */
+        post: operations["run_performance_check_mlops_model_versions__version_id__performance_check_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mlops/monitoring-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Monitoring Events */
+        get: operations["list_monitoring_events_mlops_monitoring_events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -842,6 +962,78 @@ export interface components {
              */
             created_at: string;
         };
+        /** DriftCheckRequest */
+        DriftCheckRequest: {
+            /**
+             * Dataset Id
+             * Format: uuid
+             */
+            dataset_id: string;
+        };
+        /** DriftResultOut */
+        DriftResultOut: {
+            /**
+             * Model Version Id
+             * Format: uuid
+             */
+            model_version_id: string;
+            /**
+             * Dataset Id
+             * Format: uuid
+             */
+            dataset_id: string;
+            /**
+             * Overall Status
+             * @enum {string}
+             */
+            overall_status: "stable" | "warning" | "drift" | "unknown";
+            /** Total Features Checked */
+            total_features_checked: number;
+            /** Drifted Feature Count */
+            drifted_feature_count: number;
+            /** Warning Feature Count */
+            warning_feature_count: number;
+            /** Warning Threshold */
+            warning_threshold: number;
+            /** Severe Threshold */
+            severe_threshold: number;
+            /** Features */
+            features: components["schemas"]["FeatureDriftOut"][];
+            /** Explanation */
+            explanation: string;
+        };
+        /** FeatureDriftOut */
+        FeatureDriftOut: {
+            /** Feature */
+            feature: string;
+            /**
+             * Feature Type
+             * @enum {string}
+             */
+            feature_type: "numeric" | "categorical";
+            /**
+             * Method
+             * @enum {string}
+             */
+            method: "psi" | "constant_value_deviation" | "insufficient_data";
+            /** Statistic */
+            statistic: number | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "stable" | "warning" | "drift" | "unknown";
+            /** Baseline Summary */
+            baseline_summary: {
+                [key: string]: unknown;
+            };
+            /** Current Summary */
+            current_summary: {
+                [key: string]: unknown;
+            };
+            /** Explanation */
+            explanation: string;
+        };
         /** FeatureImportanceOut */
         FeatureImportanceOut: {
             /** Feature */
@@ -1026,6 +1218,150 @@ export interface components {
             /** Results */
             results: components["schemas"]["ClassificationResultsOut"] | components["schemas"]["ForecastResultsOut"] | components["schemas"]["SegmentationResultsOut"] | components["schemas"]["AnomalyResultsOut"];
         };
+        /** ModelVersionDetailOut */
+        ModelVersionDetailOut: {
+            version: components["schemas"]["ModelVersionOut"];
+            run: components["schemas"]["MLRunResultsOut"];
+        };
+        /** ModelVersionOut */
+        ModelVersionOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Ml Run Id
+             * Format: uuid
+             */
+            ml_run_id: string;
+            /**
+             * Dataset Id
+             * Format: uuid
+             */
+            dataset_id: string;
+            /**
+             * Task Type
+             * @enum {string}
+             */
+            task_type: "classification" | "forecasting" | "segmentation" | "anomaly_detection";
+            /** Model Name */
+            model_name: string;
+            /** Version Number */
+            version_number: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "candidate" | "staging" | "production" | "archived";
+            /** Artifact Checksum */
+            artifact_checksum: string;
+            /** Created By */
+            created_by: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Promoted By */
+            promoted_by: string | null;
+            /** Promoted At */
+            promoted_at: string | null;
+        };
+        /** MonitoringEventOut */
+        MonitoringEventOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Model Version Id
+             * Format: uuid
+             */
+            model_version_id: string;
+            /**
+             * Dataset Id
+             * Format: uuid
+             */
+            dataset_id: string;
+            /**
+             * Event Type
+             * @enum {string}
+             */
+            event_type: "drift" | "performance_monitoring";
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "info" | "warning" | "critical";
+            /** Summary */
+            summary: string;
+            /** Details */
+            details: {
+                [key: string]: unknown;
+            };
+            /** Created By */
+            created_by: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** PerformanceCheckOut */
+        PerformanceCheckOut: {
+            /**
+             * Model Version Id
+             * Format: uuid
+             */
+            model_version_id: string;
+            /**
+             * Dataset Id
+             * Format: uuid
+             */
+            dataset_id: string;
+            /**
+             * Task Type
+             * @enum {string}
+             */
+            task_type: "classification" | "forecasting" | "segmentation" | "anomaly_detection";
+            /** Ground Truth Available */
+            ground_truth_available: boolean;
+            /** Primary Metric */
+            primary_metric: string | null;
+            /** Baseline Value */
+            baseline_value: number | null;
+            /** Current Value */
+            current_value: number | null;
+            /** Absolute Change */
+            absolute_change: number | null;
+            /** Relative Change */
+            relative_change: number | null;
+            /** Warning Threshold */
+            warning_threshold: number;
+            /** Severe Threshold */
+            severe_threshold: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "stable" | "warning" | "degraded" | "not_applicable";
+            /** Explanation */
+            explanation: string;
+            /** Extra Metrics */
+            extra_metrics?: {
+                [key: string]: number;
+            };
+        };
+        /** PerformanceCheckRequest */
+        PerformanceCheckRequest: {
+            /**
+             * Dataset Id
+             * Format: uuid
+             */
+            dataset_id: string;
+        };
         /** PermissionOut */
         PermissionOut: {
             /** Id */
@@ -1073,6 +1409,14 @@ export interface components {
                 [key: string]: unknown;
             }[];
         };
+        /** PromoteModelVersionRequest */
+        PromoteModelVersionRequest: {
+            /**
+             * Target Status
+             * @enum {string}
+             */
+            target_status: "staging" | "production";
+        };
         /** QualityIssueOut */
         QualityIssueOut: {
             /** Rule */
@@ -1097,6 +1441,14 @@ export interface components {
             quality_score: number;
             /** Issues */
             issues: components["schemas"]["QualityIssueOut"][];
+        };
+        /** RegisterModelVersionRequest */
+        RegisterModelVersionRequest: {
+            /**
+             * Ml Run Id
+             * Format: uuid
+             */
+            ml_run_id: string;
         };
         /** RegisterRequest */
         RegisterRequest: {
@@ -2300,6 +2652,272 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PredictionResponseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_model_versions_mlops_model_versions_get: {
+        parameters: {
+            query?: {
+                dataset_id?: string | null;
+                task_type?: string | null;
+                status?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelVersionOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    register_model_version_mlops_model_versions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterModelVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelVersionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_model_version_mlops_model_versions__version_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelVersionDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    promote_model_version_mlops_model_versions__version_id__promote_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PromoteModelVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelVersionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    archive_model_version_mlops_model_versions__version_id__archive_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelVersionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_drift_check_mlops_model_versions__version_id__drift_check_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DriftCheckRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriftResultOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_performance_check_mlops_model_versions__version_id__performance_check_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PerformanceCheckRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PerformanceCheckOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_monitoring_events_mlops_monitoring_events_get: {
+        parameters: {
+            query?: {
+                model_version_id?: string | null;
+                event_type?: string | null;
+                severity?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MonitoringEventOut"][];
                 };
             };
             /** @description Validation Error */

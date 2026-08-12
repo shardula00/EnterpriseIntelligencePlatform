@@ -73,6 +73,27 @@ describe('AppShell', () => {
     expect(screen.queryByRole('link', { name: 'ML' })).not.toBeInTheDocument()
   })
 
+  it('shows the MLOps link for any authenticated user with mlops:read, including a Viewer', async () => {
+    setFakeToken()
+    vi.mocked(apiClient.authMe).mockResolvedValue(
+      fakeUser({ roles: ['VIEWER'], permissions: VIEWER_PERMISSIONS }),
+    )
+
+    renderShell()
+    expect(await screen.findByRole('link', { name: 'MLOps' })).toHaveAttribute('href', '/mlops')
+  })
+
+  it('hides the MLOps link when the user has no mlops:read permission', async () => {
+    setFakeToken()
+    vi.mocked(apiClient.authMe).mockResolvedValue(
+      fakeUser({ roles: ['VIEWER'], permissions: ['dataset:read'] }),
+    )
+
+    renderShell()
+    await screen.findByRole('button', { name: /log out/i })
+    expect(screen.queryByRole('link', { name: 'MLOps' })).not.toBeInTheDocument()
+  })
+
   it('logs out and returns to the login page when Log out is clicked', async () => {
     setFakeToken()
     vi.mocked(apiClient.authMe).mockResolvedValue(fakeUser())

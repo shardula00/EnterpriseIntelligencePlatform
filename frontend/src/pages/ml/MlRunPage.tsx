@@ -11,6 +11,7 @@ import { ClassificationResultsView } from '../../components/ml/ClassificationRes
 import { ForecastResultsView } from '../../components/ml/ForecastResultsView'
 import { SegmentationResultsView } from '../../components/ml/SegmentationResultsView'
 import { AnomalyResultsView } from '../../components/ml/AnomalyResultsView'
+import { RegisterVersionAction } from '../../components/mlops/RegisterVersionAction'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { ErrorMessage } from '../../components/common/ErrorMessage'
 import { useAsync } from '../../hooks/useAsync'
@@ -63,6 +64,11 @@ export function MlRunPage() {
       {isAnomalyResults(runResults) && (
         <AnomalyResultsView runId={run.id} results={runResults.results} />
       )}
+
+      <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 className="mb-3 text-sm font-semibold text-slate-900">Model registry</h2>
+        <RegisterVersionAction runId={run.id} />
+      </section>
     </div>
   )
 }

@@ -35,6 +35,11 @@ class AuditAction:
     USER_DELETED = "user.deleted"
     USER_ROLE_CHANGED = "user.role_changed"
     ML_MODEL_TRAINED = "ml.model_trained"
+    MODEL_VERSION_REGISTERED = "mlops.model_version_registered"
+    MODEL_VERSION_PROMOTED = "mlops.model_version_promoted"
+    MODEL_VERSION_ARCHIVED = "mlops.model_version_archived"
+    DRIFT_CHECK_RUN = "mlops.drift_check_run"
+    PERFORMANCE_CHECK_RUN = "mlops.performance_check_run"
 
 
 # Case-insensitive metadata keys that are never written, no matter what a

@@ -51,9 +51,9 @@ Application Services
 │  Data Platform     ML Platform       AI Platform      │
 │  ─────────────     ──────────        ───────────      │
 │  Ingestion          Training          RAG              │
-│  Validation         Registry (MLflow) Agents            │
+│  Validation         Native registry   Agents            │
 │  ETL                Prediction        Knowledge Graph   │
-│  Storage            Monitoring        Text-to-SQL        │
+│  Storage            Drift/monitoring  Text-to-SQL        │
 └─────────────────────────────────────────────────────┘
   ↓
 PostgreSQL (+ pgvector)
@@ -75,8 +75,8 @@ Full reasoning, component responsibilities, and data flow are in
 | 2 | Data platform — ingestion, schema detection, profiling, quality, lineage |
 | 3 | BI layer — KPI engine, React/Vite/Tailwind dashboards |
 | 4 | Auth & RBAC — users, roles, permissions, audit log |
-| 5 | Classical ML — churn, forecasting, segmentation, anomaly detection (**current**) |
-| 6 | MLOps hardening — model registry, monitoring, drift detection, async serving |
+| 5 | Classical ML — churn, forecasting, segmentation, anomaly detection |
+| 6 | MLOps hardening — model registry, drift detection, performance monitoring, alerting (**current**) |
 | 7 | GenAI/RAG foundation — embeddings, pgvector retrieval, configurable LLM provider |
 | 8 | NL analytics — Text-to-SQL, AI explanations, answer evaluation |
 | 9 | Knowledge graph — entities/relationships, hybrid RAG+KG retrieval |
@@ -111,7 +111,7 @@ evaluated against each other), not a current deliverable.
 | Database | PostgreSQL + pgvector | One database for relational *and* vector data — no separate vector DB needed at this scale |
 | Data/ML | Pandas, NumPy, scikit-learn, XGBoost, PyTorch (where justified) | Standard, well-supported, free |
 | AI | Hugging Face, configurable LLM provider, local LLM support, RAG | Avoids lock-in to a single paid API |
-| MLOps | MLflow | Free, local-first experiment tracking and model registry |
+| MLOps | Native registry (Phase 6) — `ModelVersion`/`MonitoringEvent` tables, PSI-based drift, per-task performance checks | No MLflow needed: the registry only tracks this platform's own runs, joined to existing `ml_runs` data with zero new infrastructure |
 | CI/CD | GitHub Actions + Docker | Free tier is sufficient for a solo project |
 | Cloud | AWS (later, after local system is stable) | Deferred until there's something worth deploying |
 
@@ -128,7 +128,7 @@ EnterpriseIntelligencePlatform/
 ├── DEVELOPMENT_PLAN.md      — phased implementation plan
 ├── .gitignore
 ├── .python-version          — pins Python 3.12 for the backend/ML environment
-├── backend/                 — FastAPI app: ingestion (Phase 2), KPI engine (Phase 3), auth/RBAC/audit (Phase 4), classical ML (Phase 5)
+├── backend/                 — FastAPI app: ingestion (Phase 2), KPI engine (Phase 3), auth/RBAC/audit (Phase 4), classical ML (Phase 5), MLOps registry/monitoring (Phase 6)
 ├── frontend/                — React + TS + Vite + Tailwind app (Phase 3), auth-aware (Phase 4)
 ├── data/                    — local dataset working area (gitignored contents)
 ├── infra/                   — docker-compose.yml (Postgres + pgvector)
@@ -137,24 +137,28 @@ EnterpriseIntelligencePlatform/
 
 ## Status
 
-**Phase 5 — Classical Machine Learning.** The platform can now train and
-evaluate real ML models on any uploaded dataset: binary classification
-(e.g. churn), time-series forecasting, customer segmentation, and anomaly
-detection. Every dataset is checked for task suitability with specific,
-human-readable reasons before training is even offered; preprocessing is
-fit only on the training split (never the full dataset) to prevent
-leakage; model comparison uses a task-appropriate primary metric (ROC-AUC,
-not accuracy, for classification; MAE for forecasting); explainability
-comes from permutation importance, phrased as association, never
-causation. A `/ml` section in the frontend covers task selection, dataset
-suitability, per-task configuration, training, model comparison, and
-per-task visualizations, gated by three new permissions (`ml:read`,
-`ml:train`, `ml:predict`). Trained model artifacts are stored locally,
-versioned by run; only metadata and results are persisted in the database
-— this is deliberately not a full model registry (see Phase 6). All of
-Phase 1–4's ingestion, KPI, and auth/RBAC/audit functionality keeps
-working exactly as before. See [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md)
-for what comes next.
+**Phase 6 — MLOps Hardening.** Every completed training run (Phase 5) can
+now be registered as a versioned, lineage-preserving model version and
+moved through a lifecycle — candidate → staging → production → archived —
+enforced both in application code and by a database constraint that allows
+at most one production version per dataset/task family. A model version
+can be evaluated for data drift (Population Stability Index, against a new
+dataset) and performance degradation (real ground-truth metrics for
+classification/forecasting, honestly-labeled unsupervised proxy signals
+for segmentation/anomaly detection); every check is recorded as a
+severity-rated monitoring event, queryable via API and visible on a global
+alerts page and each version's own detail page — the foundation for a
+future external alert channel, not one itself. Detection never
+auto-remediates: retraining or re-promotion stays a separate, explicit,
+human action. A `/mlops` section in the frontend extends the existing ML
+UI (reusing Phase 5's results components rather than duplicating them),
+gated by three new permissions (`mlops:read`, `mlops:evaluate`,
+`mlops:promote`). No MLflow, no Celery/Redis — see
+[ARCHITECTURE.md](ARCHITECTURE.md) §3.4a for why a native implementation
+was sufficient. All of Phase 1–5's functionality — ingestion, KPIs,
+auth/RBAC/audit, and all four ML tasks — keeps working exactly as before,
+re-verified end-to-end. See [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) for
+what comes next.
 
 ## Local development principles
 

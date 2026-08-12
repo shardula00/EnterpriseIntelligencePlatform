@@ -64,6 +64,20 @@ class Settings(BaseSettings):
     ml_default_random_seed: int = 42
     ml_max_training_rows: int = 50_000
 
+    # MLOps (Phase 6). Drift is measured via PSI (Population Stability
+    # Index), a standard, widely-used credit-risk/MLOps monitoring statistic
+    # - these are its conventional published thresholds, not values invented
+    # for this project. See app/mlops/drift.py for the full explanation.
+    drift_psi_warning_threshold: float = 0.1
+    drift_psi_severe_threshold: float = 0.25
+    # Relative (not absolute) change in a model's primary metric vs. its
+    # recorded training-time baseline. 5%/15% are deliberately simple,
+    # documented defaults (see app/mlops/monitoring.py) - not a
+    # statistically derived significance level, since that would need a
+    # sampling distribution this project doesn't have the data to estimate.
+    performance_degradation_warning_threshold: float = 0.05
+    performance_degradation_severe_threshold: float = 0.15
+
 
 @lru_cache
 def get_settings() -> Settings:

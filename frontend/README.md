@@ -7,7 +7,10 @@ presentation and interaction state. Phase 4 added authentication
 (login/register/logout), protected routes, and role-aware UI - see
 "Authentication (Phase 4)" below. Phase 5 added a `/ml` section - task
 selection, dataset suitability, per-task training configuration, model
-comparison, and predictions - see "Classical ML (Phase 5)" below.
+comparison, and predictions - see "Classical ML (Phase 5)" below. Phase 6
+added a `/mlops` section - model registry, lifecycle promotion, drift and
+performance monitoring, and a global alerts page - see "MLOps (Phase 6)"
+below.
 
 ## Prerequisites
 
@@ -115,6 +118,50 @@ the sibling `run.task_type` field via `isClassificationResults()` /
 documented inline as to why that narrowing pattern exists instead of a
 schema-level discriminator.
 
+## MLOps (Phase 6)
+
+The `/mlops` section (gated by `mlops:read`; registering/evaluating
+additionally needs `mlops:evaluate`, promoting/archiving needs
+`mlops:promote` - see `backend/README.md`'s Phase 6 section for the
+permission catalog). It extends the existing ML UI rather than
+introducing a second design system - the version detail page in
+particular reuses Phase 5's exact results components.
+
+- **`/mlops`** - the Model Registry: every registered model version
+  (task, version number, algorithm, lifecycle status, registered date),
+  filterable by lifecycle status. `RegisterVersionAction` on a completed
+  run's results page (`/ml/runs/:runId`, Phase 5) is the entry point into
+  the registry - training and registering are deliberately separate,
+  explicit steps, not something that happens automatically on every run.
+- **`/mlops/versions/:versionId`** - Model Version Detail: lifecycle state
+  and actions (`LifecycleBadge`, promote/archive buttons gated by
+  `mlops:promote`, forward-only one stage at a time, with "Archived is
+  terminal" shown once there), the training run's real results (reusing
+  `ClassificationResultsView`/`ForecastResultsView`/
+  `SegmentationResultsView`/`AnomalyResultsView` from `src/components/ml/`
+  - not a re-implementation), a `DriftCheckPanel` and
+  `PerformanceCheckPanel` to run checks against any other uploaded
+  dataset, and that version's own monitoring history
+  (`MonitoringEventList`).
+- **`/mlops/alerts`** - Monitoring Alerts: every drift/performance event
+  ever recorded, across every model version, most recent first,
+  filterable by severity, each linking back to its model version.
+- **Drift and performance results render honestly, not decoratively.**
+  `DriftCheckPanel` shows the overall PSI-based status, per-feature
+  statistics/explanations, and the configured thresholds - not just a
+  pass/fail badge. `PerformanceCheckPanel` shows baseline vs. current
+  value, absolute/relative change, and thresholds, plus a distinct
+  "No ground truth - proxy signal only" badge when
+  `ground_truth_available` is `false` (segmentation/anomaly detection) -
+  the UI never presents an unsupervised proxy signal as if it were a
+  supervised accuracy figure.
+- **Checks notify their parent page on success.** `DriftCheckPanel`/
+  `PerformanceCheckPanel` take an optional `onChecked` callback, called
+  after a successful check so the version detail page's monitoring-history
+  section can refresh immediately - found by the real browser E2E: without
+  it, a check's own event was invisible on the same page until a manual
+  reload, since the history list otherwise only fetches once on mount.
+
 ## Regenerating the typed API client
 
 Whenever the backend's routes or response models change, regenerate the
@@ -175,6 +222,9 @@ src/
                           FeatureImportanceChart, ConfusionMatrix,
                           ForecastChart, ClusterCharts, AnomalyScoreChart),
                           FeatureColumnPicker, PredictAction
+    mlops/              - Phase 6: LifecycleBadge, SeverityBadge,
+                          DriftCheckPanel, PerformanceCheckPanel,
+                          MonitoringEventList, RegisterVersionAction
     common/             - LoadingSpinner, ErrorMessage, EmptyState
   pages/
     DatasetsPage.tsx        - upload + dataset list ("/")
@@ -187,6 +237,10 @@ src/
                               MlConfigurePage ("/ml/:taskType/:datasetId"),
                               MlRunPage ("/ml/runs/:runId"),
                               MlRunsHistoryPage ("/ml/runs")
+    mlops/                  - Phase 6: ModelRegistryPage ("/mlops"),
+                              ModelVersionDetailPage
+                              ("/mlops/versions/:versionId"),
+                              MonitoringEventsPage ("/mlops/alerts")
   test/
     renderWithProviders.tsx  - render helper wrapping MemoryRouter + AuthProvider
     authTestUtils.ts         - fakeUser()/setFakeToken() for auth-aware component tests
@@ -227,3 +281,19 @@ src/
   page directly - going back to the configure page and submitting again
   creates a new, independent run rather than an editable one (consistent
   with runs being immutable once trained).
+
+**Phase 6:**
+- The version detail page's "lifecycle history" is the version's own
+  current state (created/promoted timestamps and actors), not a full
+  multi-transition audit trail - the complete transition history is in
+  the audit log (`/admin/audit`, `audit:read`, Admin-only), deliberately
+  not duplicated here since Viewer/Analyst users with `mlops:read` can't
+  see that page but should still see *something* about a version's
+  history.
+- No scheduled/automatic drift or performance checks in the UI (or the
+  backend - see backend/README.md's Phase 6 limitations) - a user must
+  explicitly select a dataset and click "Run drift check"/"Run
+  performance check."
+- No dedicated UI for comparing two model versions side by side - each
+  version's detail page is independently inspectable, but there's no
+  diff view yet.

@@ -369,3 +369,76 @@ export async function predictMlRun(runId: string, horizon?: number) {
   })
   return unwrap(result)
 }
+
+// ---------------------------------------------------------------------------
+// MLOps: model registry, drift detection, performance monitoring (Phase 6)
+// ---------------------------------------------------------------------------
+
+export async function registerModelVersion(mlRunId: string) {
+  const result = await client.POST('/mlops/model-versions', { body: { ml_run_id: mlRunId } })
+  return unwrap(result)
+}
+
+export async function listModelVersions(
+  params: { datasetId?: string; taskType?: string; status?: string } = {},
+) {
+  const result = await client.GET('/mlops/model-versions', {
+    params: {
+      query: { dataset_id: params.datasetId, task_type: params.taskType, status: params.status },
+    },
+  })
+  return unwrap(result)
+}
+
+export async function getModelVersion(versionId: string) {
+  const result = await client.GET('/mlops/model-versions/{version_id}', {
+    params: { path: { version_id: versionId } },
+  })
+  return unwrap(result)
+}
+
+export async function promoteModelVersion(versionId: string, targetStatus: 'staging' | 'production') {
+  const result = await client.POST('/mlops/model-versions/{version_id}/promote', {
+    params: { path: { version_id: versionId } },
+    body: { target_status: targetStatus },
+  })
+  return unwrap(result)
+}
+
+export async function archiveModelVersion(versionId: string) {
+  const result = await client.POST('/mlops/model-versions/{version_id}/archive', {
+    params: { path: { version_id: versionId } },
+  })
+  return unwrap(result)
+}
+
+export async function runDriftCheck(versionId: string, datasetId: string) {
+  const result = await client.POST('/mlops/model-versions/{version_id}/drift-check', {
+    params: { path: { version_id: versionId } },
+    body: { dataset_id: datasetId },
+  })
+  return unwrap(result)
+}
+
+export async function runPerformanceCheck(versionId: string, datasetId: string) {
+  const result = await client.POST('/mlops/model-versions/{version_id}/performance-check', {
+    params: { path: { version_id: versionId } },
+    body: { dataset_id: datasetId },
+  })
+  return unwrap(result)
+}
+
+export async function listMonitoringEvents(
+  params: { modelVersionId?: string; eventType?: string; severity?: string } = {},
+) {
+  const result = await client.GET('/mlops/monitoring-events', {
+    params: {
+      query: {
+        model_version_id: params.modelVersionId,
+        event_type: params.eventType,
+        severity: params.severity,
+      },
+    },
+  })
+  return unwrap(result)
+}

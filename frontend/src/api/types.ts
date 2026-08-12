@@ -45,6 +45,9 @@ export type PermissionName =
   | 'ml:read'
   | 'ml:train'
   | 'ml:predict'
+  | 'mlops:read'
+  | 'mlops:evaluate'
+  | 'mlops:promote'
 
 // ---------------------------------------------------------------------------
 // Classical ML (Phase 5)
@@ -140,3 +143,23 @@ export function isAnomalyPredictions(
 ): response is PredictionResponse & { predictions: AnomalyPrediction[] } {
   return response.task_type === 'anomaly_detection'
 }
+
+// ---------------------------------------------------------------------------
+// MLOps: model registry, drift detection, performance monitoring (Phase 6)
+// ---------------------------------------------------------------------------
+
+export type ModelVersion = components['schemas']['ModelVersionOut']
+export type ModelVersionDetail = components['schemas']['ModelVersionDetailOut']
+/** No standalone "LifecycleStatus" schema exists, same reasoning as
+ * MlTaskType above - derived from a real usage site instead. */
+export type LifecycleStatus = ModelVersion['status']
+
+export type FeatureDrift = components['schemas']['FeatureDriftOut']
+export type DriftResult = components['schemas']['DriftResultOut']
+export type DriftStatus = DriftResult['overall_status']
+
+export type PerformanceCheck = components['schemas']['PerformanceCheckOut']
+export type PerformanceStatus = PerformanceCheck['status']
+
+export type MonitoringEvent = components['schemas']['MonitoringEventOut']
+export type MonitoringSeverity = MonitoringEvent['severity']

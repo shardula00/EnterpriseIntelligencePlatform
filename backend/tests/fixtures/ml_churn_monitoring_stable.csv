@@ -1,0 +1,401 @@
+tenure_months,monthly_charges,total_charges,contract_type,support_tickets,age,churned
+43,71.16,3015.34,One year,1,67,False
+70,79.37,5548.08,Month-to-month,0,52,False
+33,47.06,1585.22,Month-to-month,1,38,False
+27,77.65,2076.73,Month-to-month,0,56,False
+32,108.44,3504.6,One year,2,77,False
+15,19.26,268.37,Two year,0,35,False
+8,31.27,173.87,Month-to-month,1,41,True
+53,62.58,3444.86,Month-to-month,1,37,False
+24,41.21,1112.96,One year,1,73,True
+64,118.59,7563.58,One year,1,63,False
+30,15.0,328.43,One year,0,25,False
+2,60.09,136.52,Month-to-month,4,71,True
+27,73.39,1932.0,Month-to-month,3,22,True
+40,71.83,2885.11,One year,0,46,True
+58,70.77,4041.29,Month-to-month,3,39,False
+50,42.96,2158.73,Month-to-month,1,45,False
+63,98.67,6258.57,Month-to-month,3,77,False
+38,80.95,3133.73,Month-to-month,2,68,True
+68,59.47,4075.35,Month-to-month,3,46,False
+2,47.88,122.9,Month-to-month,2,63,True
+10,71.56,690.72,Month-to-month,1,51,False
+33,57.02,1916.94,Two year,2,42,False
+30,54.71,1668.1,Two year,2,19,True
+60,56.17,3344.77,Month-to-month,2,46,False
+22,26.68,593.04,Month-to-month,1,79,True
+32,24.3,776.94,Month-to-month,0,33,False
+20,59.54,1163.45,Month-to-month,2,48,True
+12,80.77,937.91,Month-to-month,0,39,True
+69,51.94,3609.14,One year,0,72,False
+31,88.32,2727.96,Month-to-month,1,63,True
+37,38.6,1379.51,One year,0,69,False
+2,71.11,190.79,Month-to-month,2,49,True
+21,114.91,2380.31,Two year,2,79,False
+8,72.43,567.65,Month-to-month,0,63,True
+27,150.0,4003.45,One year,1,68,False
+67,49.78,3356.77,One year,1,41,False
+46,57.37,2618.0,Month-to-month,4,74,False
+43,69.76,3038.77,Month-to-month,5,41,True
+20,99.77,1931.98,Two year,1,79,False
+39,24.49,945.95,Month-to-month,2,59,False
+11,77.03,706.64,Month-to-month,3,49,True
+64,118.11,7612.41,Month-to-month,1,24,False
+47,107.2,5061.2,One year,1,38,False
+72,39.55,2941.18,Two year,3,36,False
+59,61.28,3563.32,Month-to-month,2,29,True
+44,65.78,2865.99,Month-to-month,2,19,True
+11,50.79,529.38,Month-to-month,0,19,True
+48,34.83,1702.57,Month-to-month,1,43,False
+36,36.97,1320.47,One year,3,69,False
+69,34.97,2437.72,Two year,0,22,False
+56,93.92,5254.46,Month-to-month,0,30,False
+68,71.83,4926.87,Two year,3,41,False
+66,15.0,994.53,One year,3,68,False
+19,103.46,1926.57,Month-to-month,1,48,True
+14,96.21,1397.43,Month-to-month,2,57,True
+61,56.7,3485.49,One year,2,74,False
+16,74.97,1214.53,One year,3,56,True
+47,15.0,648.23,Two year,3,59,False
+44,125.66,5466.06,One year,0,20,False
+45,76.94,3379.67,Month-to-month,0,63,True
+42,27.77,1113.68,Month-to-month,2,51,False
+54,50.07,2716.58,Two year,3,73,False
+70,82.61,5720.46,Month-to-month,1,68,False
+51,92.4,4616.13,Two year,1,46,False
+42,57.53,2348.16,One year,0,46,True
+59,104.11,6123.73,One year,1,49,False
+45,37.75,1733.08,Month-to-month,2,39,True
+63,80.05,5011.7,Month-to-month,0,51,False
+66,40.37,2632.58,One year,2,49,False
+61,54.46,3286.19,Month-to-month,1,23,False
+46,46.04,2097.23,Month-to-month,0,59,False
+54,40.59,2138.2,Two year,3,44,False
+58,90.27,5245.72,One year,1,60,False
+63,56.24,3510.18,One year,1,71,False
+36,48.07,1610.82,One year,1,29,False
+45,82.25,3627.1,One year,0,22,False
+23,81.69,1859.68,Two year,1,60,False
+57,99.51,5691.55,One year,0,62,True
+22,90.5,1972.83,Month-to-month,1,24,True
+27,78.6,2134.36,Month-to-month,2,20,False
+48,75.47,3699.26,Month-to-month,1,40,True
+64,15.0,948.3,Two year,0,52,False
+28,59.49,1696.37,Two year,1,22,False
+68,68.66,4722.63,Month-to-month,3,43,True
+6,55.03,284.12,One year,1,56,False
+6,94.91,550.02,Month-to-month,0,65,True
+59,70.6,4171.26,Month-to-month,0,50,False
+44,58.08,2629.46,One year,0,80,False
+71,52.55,3707.98,One year,1,63,False
+34,79.69,2775.08,Two year,1,30,True
+15,51.74,729.88,Two year,0,53,False
+51,72.64,3574.71,One year,2,20,False
+3,118.58,364.04,One year,2,42,True
+72,45.26,3202.57,Month-to-month,1,21,False
+62,82.45,5069.95,One year,1,68,False
+27,117.66,3161.5,Month-to-month,1,27,False
+67,38.56,2599.7,Month-to-month,6,49,False
+56,85.56,4745.35,Month-to-month,1,18,True
+40,29.08,1139.66,Month-to-month,2,39,False
+38,105.08,4086.49,Month-to-month,1,76,True
+51,80.99,4122.51,Month-to-month,1,54,False
+63,111.21,6984.08,One year,0,33,True
+40,47.38,1794.87,Month-to-month,3,24,False
+26,37.54,973.6,Month-to-month,1,20,True
+5,32.29,163.97,Month-to-month,0,38,False
+10,67.34,641.85,Month-to-month,2,73,False
+35,22.74,731.91,Month-to-month,1,47,True
+19,82.89,1634.48,Month-to-month,3,19,True
+51,87.64,4597.02,One year,2,62,False
+19,79.28,1527.02,Month-to-month,0,77,False
+71,112.31,8044.39,Month-to-month,1,54,False
+49,76.5,3742.9,Month-to-month,3,40,True
+62,99.51,6104.76,Month-to-month,2,63,True
+70,49.27,3491.03,Two year,4,44,True
+14,76.13,1050.54,Month-to-month,4,55,True
+43,66.7,2772.08,Month-to-month,1,45,False
+24,69.79,1710.01,Month-to-month,4,40,True
+67,90.75,6043.7,One year,0,22,False
+42,73.86,3026.9,Month-to-month,0,64,False
+25,99.74,2434.57,Month-to-month,1,47,True
+10,120.95,1245.65,Month-to-month,0,71,True
+43,60.74,2652.49,One year,2,36,False
+30,62.95,1918.37,One year,1,51,False
+64,49.92,3270.37,Two year,1,58,False
+59,83.97,4929.38,One year,3,40,False
+29,88.96,2517.97,Two year,3,49,False
+35,76.24,2648.24,One year,0,62,True
+58,76.83,4421.6,Month-to-month,1,52,True
+70,86.34,6007.55,Month-to-month,0,78,False
+65,66.89,4330.42,One year,2,57,False
+71,78.77,5503.84,Two year,1,29,False
+41,30.94,1226.41,Month-to-month,2,49,True
+69,51.23,3491.35,Two year,0,53,False
+42,84.76,3532.2,Month-to-month,3,67,False
+36,65.99,2417.55,Month-to-month,2,42,True
+49,46.5,2290.86,Month-to-month,2,49,True
+55,38.17,2105.54,Month-to-month,3,46,True
+21,87.41,1882.83,One year,4,52,True
+64,64.42,4134.2,Month-to-month,2,55,False
+35,70.71,2481.75,Month-to-month,4,60,True
+32,63.62,1996.21,Two year,2,71,True
+64,67.56,4271.7,One year,3,75,False
+45,86.99,3915.82,One year,1,68,False
+40,94.6,3836.31,One year,2,77,False
+60,92.83,5501.44,Two year,2,55,False
+12,57.74,612.17,Month-to-month,2,44,True
+28,28.18,795.97,Month-to-month,4,59,True
+48,123.08,5961.76,Month-to-month,5,72,True
+59,70.88,4173.34,Month-to-month,1,78,False
+66,78.73,5232.93,One year,0,79,False
+42,90.84,3876.96,Two year,1,51,False
+71,93.01,6561.52,Month-to-month,1,67,True
+23,40.05,929.52,Month-to-month,1,47,False
+36,69.2,2423.9,Two year,0,41,False
+30,84.79,2565.03,Month-to-month,2,31,True
+33,48.56,1683.55,One year,0,18,False
+18,56.95,960.48,Month-to-month,2,39,True
+7,28.77,230.74,Month-to-month,0,72,False
+27,99.42,2717.37,Two year,0,31,True
+72,106.58,7682.27,One year,0,74,False
+63,100.36,6255.36,Month-to-month,1,70,False
+70,76.25,5378.51,One year,0,47,False
+51,81.5,4174.16,One year,0,21,True
+67,69.64,4625.29,Month-to-month,4,79,True
+34,69.68,2273.85,One year,2,64,True
+21,57.85,1191.38,Month-to-month,2,59,False
+12,41.68,508.69,Month-to-month,1,68,True
+42,32.41,1287.29,Two year,2,37,False
+28,15.0,441.15,Month-to-month,2,77,True
+12,95.17,1187.44,Month-to-month,1,21,True
+35,47.8,1678.65,Month-to-month,0,50,True
+46,59.22,2701.06,Month-to-month,1,79,False
+32,40.73,1401.65,Month-to-month,0,79,False
+69,69.32,4765.47,Month-to-month,0,61,False
+61,77.13,4577.62,Two year,1,50,False
+57,91.52,5183.3,Month-to-month,4,48,True
+16,61.78,1015.96,Two year,2,55,False
+48,45.66,2174.67,Month-to-month,0,71,False
+60,56.78,3452.73,Two year,1,20,False
+14,55.57,718.46,One year,1,64,False
+53,44.31,2323.69,One year,3,59,False
+36,47.74,1793.75,One year,1,56,False
+25,104.3,2622.53,Month-to-month,0,47,False
+12,92.69,1020.65,One year,1,46,True
+43,39.7,1681.47,Month-to-month,1,22,True
+7,54.35,334.65,Month-to-month,1,54,True
+55,79.61,4432.06,One year,1,62,False
+4,74.06,305.06,Two year,4,64,False
+42,76.28,3192.23,Month-to-month,1,38,False
+69,73.03,5013.96,One year,1,38,False
+69,121.66,8361.0,Two year,2,43,False
+32,58.84,1839.46,Two year,1,21,False
+33,70.18,2327.46,Month-to-month,2,46,True
+25,75.49,1942.22,Month-to-month,1,38,False
+59,82.76,4962.42,One year,1,19,False
+34,75.25,2562.18,Two year,1,47,True
+41,39.84,1633.87,Month-to-month,3,35,False
+41,77.42,3145.01,One year,1,77,False
+50,67.75,3403.26,Month-to-month,3,42,True
+58,90.57,5286.34,One year,1,65,False
+63,41.84,2621.34,Month-to-month,1,18,False
+24,73.87,1784.44,Month-to-month,2,33,False
+31,41.05,1278.48,Month-to-month,1,24,False
+59,112.5,6601.7,Month-to-month,1,52,True
+58,93.14,5431.68,One year,1,40,False
+45,95.45,4323.49,Two year,4,69,False
+37,102.54,3845.07,Month-to-month,2,60,True
+57,87.53,5011.67,Month-to-month,1,33,True
+13,23.06,265.02,Month-to-month,1,74,False
+12,27.49,414.97,Month-to-month,0,58,True
+67,92.08,6110.76,One year,1,46,True
+2,67.33,147.64,Two year,1,62,True
+65,83.81,5425.83,Month-to-month,2,67,True
+55,85.3,4722.72,Two year,0,48,False
+5,64.27,340.39,Two year,1,51,False
+34,79.34,2772.05,Month-to-month,2,53,True
+24,99.8,2397.35,Month-to-month,2,55,True
+57,66.1,3809.91,One year,2,72,False
+62,96.41,5880.04,One year,0,42,False
+47,42.58,1912.11,Month-to-month,2,45,True
+72,99.85,7181.63,Month-to-month,4,61,True
+4,75.6,250.28,Month-to-month,4,41,True
+46,57.75,2616.92,Month-to-month,0,37,False
+58,64.22,3792.76,Month-to-month,1,53,False
+60,48.0,2848.6,One year,2,51,False
+9,76.15,651.6,Two year,1,73,True
+1,87.09,120.67,Two year,2,50,True
+46,75.52,3400.93,Month-to-month,3,67,True
+20,23.51,288.98,Month-to-month,4,45,False
+37,75.3,2726.13,Month-to-month,1,40,True
+3,96.63,245.78,Month-to-month,1,69,True
+5,81.64,395.03,Month-to-month,3,58,False
+23,102.35,2344.68,Two year,1,20,True
+70,15.0,1056.74,Month-to-month,1,25,False
+48,65.42,3254.67,Month-to-month,4,28,False
+58,77.24,4421.4,Month-to-month,2,44,False
+14,62.54,816.65,Month-to-month,2,20,True
+31,80.72,2568.14,Two year,1,49,True
+67,42.96,2896.74,One year,2,36,False
+20,86.43,1683.1,Two year,4,42,True
+30,15.0,460.12,Two year,1,45,False
+60,101.57,6141.61,Two year,2,18,False
+42,64.56,2654.34,Month-to-month,0,55,True
+25,104.69,2560.69,Month-to-month,1,55,True
+11,79.28,847.93,Two year,3,76,False
+20,88.24,1763.21,Month-to-month,0,67,True
+71,50.99,3606.0,One year,2,56,False
+35,74.33,2601.79,Two year,2,50,False
+22,64.93,1407.59,Month-to-month,0,58,True
+26,80.93,2049.67,Month-to-month,1,19,True
+69,75.33,5260.03,Month-to-month,1,53,True
+57,101.6,5764.22,Month-to-month,2,76,True
+34,91.43,3116.12,Month-to-month,0,52,False
+59,69.52,4117.87,Month-to-month,3,54,False
+3,45.71,230.58,Two year,1,59,False
+17,75.49,1359.27,Month-to-month,1,42,True
+28,85.2,2399.7,One year,0,45,False
+58,77.16,4430.91,One year,2,19,False
+34,78.51,2661.31,Two year,1,63,False
+16,68.06,1073.73,Month-to-month,3,49,True
+12,116.36,1412.94,Month-to-month,0,23,True
+70,80.61,5660.25,One year,3,65,False
+31,71.67,2129.46,Two year,1,20,False
+4,28.84,103.99,Two year,3,18,True
+51,76.01,3827.45,Month-to-month,0,52,False
+47,56.21,2570.69,One year,2,72,True
+49,70.79,3420.09,Month-to-month,0,77,False
+42,67.12,2823.39,Two year,2,70,False
+57,87.94,5073.04,Two year,0,31,False
+45,19.94,952.46,Two year,2,56,False
+51,62.88,3188.86,Month-to-month,3,78,False
+23,129.24,2920.67,One year,1,31,False
+35,50.42,1747.92,Two year,1,33,False
+42,89.94,3696.55,Month-to-month,0,41,False
+57,67.47,3833.87,Month-to-month,1,49,True
+30,89.87,2625.0,One year,0,38,False
+2,78.79,171.46,Month-to-month,0,33,True
+28,104.14,2977.23,Two year,4,25,True
+14,69.87,1022.78,Two year,1,49,False
+35,90.28,3178.81,Month-to-month,2,60,False
+43,54.47,2356.44,Month-to-month,1,32,False
+12,82.61,1006.73,Month-to-month,5,76,True
+35,79.38,2717.56,One year,2,51,False
+21,58.05,1208.92,Month-to-month,1,29,True
+71,26.89,1906.49,One year,2,30,False
+48,63.01,2994.28,One year,2,58,False
+67,111.05,7452.72,Two year,0,63,False
+32,82.43,2639.37,Month-to-month,2,20,False
+45,44.26,1982.27,Month-to-month,3,37,False
+67,54.15,3584.81,Two year,1,63,False
+56,60.27,3383.66,Month-to-month,3,73,False
+25,15.65,380.18,One year,0,55,False
+63,51.19,3231.8,One year,1,70,False
+23,70.18,1616.23,One year,1,44,True
+17,33.28,571.94,One year,1,47,False
+40,81.68,3231.26,Month-to-month,2,32,True
+68,50.49,3417.11,One year,0,28,False
+56,54.23,3038.78,One year,2,55,True
+22,104.44,2276.81,Month-to-month,0,62,True
+30,39.9,1198.74,One year,1,31,True
+65,52.01,3372.2,Month-to-month,3,63,False
+48,101.54,4935.56,One year,0,61,False
+64,61.04,3909.43,Two year,1,35,False
+12,54.9,668.23,One year,1,77,True
+51,81.6,4184.27,Two year,3,41,False
+41,95.07,3820.04,Month-to-month,0,35,False
+38,72.13,2811.22,Two year,1,57,False
+48,107.16,5114.6,One year,0,39,False
+14,72.74,1039.08,One year,1,70,False
+70,36.93,2607.25,Two year,1,53,False
+48,62.29,3085.65,One year,1,55,True
+69,49.31,3436.92,One year,2,57,False
+3,104.87,279.42,Month-to-month,1,29,True
+36,68.6,2494.72,Month-to-month,1,22,False
+9,40.06,257.65,One year,3,72,True
+43,87.86,3835.69,Month-to-month,4,57,True
+9,67.44,569.91,Two year,3,43,False
+23,49.09,1105.68,Month-to-month,1,26,True
+19,72.36,1285.47,Two year,1,34,True
+18,45.73,831.46,Two year,1,69,False
+29,65.71,1961.98,Month-to-month,0,44,True
+10,68.4,712.59,Month-to-month,1,65,True
+34,58.5,1986.94,Month-to-month,0,39,True
+69,27.14,1888.91,Two year,2,74,False
+11,87.29,921.66,Month-to-month,2,23,False
+7,87.35,613.92,Two year,0,57,False
+61,67.94,4104.08,Month-to-month,1,48,False
+41,39.39,1613.01,Two year,2,32,False
+24,54.5,1205.05,Two year,0,19,True
+39,88.55,3468.64,Month-to-month,1,68,False
+7,118.03,899.31,Month-to-month,3,23,True
+30,122.95,3686.36,Month-to-month,3,68,False
+17,99.7,1638.31,One year,1,29,True
+1,45.54,144.51,Two year,4,57,False
+27,113.62,3027.71,Month-to-month,1,51,False
+18,96.74,1764.43,Month-to-month,3,49,True
+34,15.0,530.01,Month-to-month,1,66,True
+33,80.2,2607.16,Month-to-month,0,50,True
+59,32.29,1916.17,One year,2,30,False
+29,86.43,2459.25,Month-to-month,4,79,False
+44,111.07,4952.27,Two year,0,71,False
+8,69.64,530.4,Month-to-month,2,20,True
+67,68.55,4589.72,Two year,0,79,False
+46,84.29,3833.8,Month-to-month,0,27,False
+68,63.22,4277.37,Two year,1,44,False
+43,80.11,3387.94,Month-to-month,1,31,True
+39,60.92,2342.63,Month-to-month,3,74,False
+6,68.82,417.75,One year,1,47,True
+55,74.4,4025.17,Month-to-month,1,64,False
+19,80.79,1590.56,Month-to-month,1,48,True
+47,45.04,2188.35,Month-to-month,3,60,False
+15,85.91,1245.84,Two year,1,72,True
+54,91.37,4871.35,Month-to-month,2,27,False
+25,84.44,2117.04,Month-to-month,1,48,False
+1,68.99,117.86,Month-to-month,1,34,True
+59,75.15,4406.95,Month-to-month,3,35,False
+8,67.46,555.03,Month-to-month,1,78,True
+6,94.25,576.36,Month-to-month,0,43,True
+69,109.07,7477.44,Month-to-month,2,34,False
+53,108.0,5745.86,Month-to-month,2,37,True
+54,55.92,2992.0,Month-to-month,2,26,True
+17,114.4,1886.05,Month-to-month,1,40,True
+65,57.46,3750.5,Month-to-month,2,29,False
+71,94.99,6788.57,Two year,0,25,False
+55,92.19,5093.79,Month-to-month,1,27,False
+31,66.38,2026.19,Month-to-month,0,60,False
+63,40.4,2559.53,Month-to-month,2,53,True
+30,117.47,3582.27,Two year,1,19,False
+21,59.05,1183.72,Month-to-month,1,77,True
+71,56.99,4079.68,Two year,1,43,False
+10,40.68,439.14,One year,5,72,True
+8,102.71,840.69,Month-to-month,2,43,True
+72,61.46,4408.25,One year,2,29,False
+59,56.23,3357.21,Month-to-month,2,59,True
+28,73.91,1997.03,Month-to-month,1,38,True
+60,47.18,2849.9,One year,0,36,False
+61,56.64,3525.54,Month-to-month,0,42,False
+39,22.96,931.52,Two year,4,80,False
+32,41.25,1327.22,Month-to-month,2,78,False
+16,45.47,670.03,Month-to-month,3,63,True
+59,54.29,3191.38,Month-to-month,1,29,False
+14,73.31,1133.69,One year,1,74,False
+71,69.27,4897.72,Two year,0,69,False
+38,100.81,3766.95,Two year,3,62,False
+69,41.79,2866.11,Month-to-month,0,72,False
+70,56.47,3985.21,Month-to-month,1,35,False
+42,15.0,627.31,Month-to-month,1,48,False
+65,42.15,2781.73,One year,2,50,False
+21,15.0,325.79,Month-to-month,2,61,False
+3,72.2,307.63,Month-to-month,3,60,True
+36,67.17,2482.58,Month-to-month,1,66,True
+33,107.9,3604.07,Two year,4,37,False
+25,60.77,1576.51,Month-to-month,0,64,True
+46,75.58,3509.22,One year,1,61,False
+64,36.04,2238.07,Month-to-month,0,19,False
+28,80.13,2263.28,One year,2,38,False
+49,74.88,3631.58,Two year,1,76,False
+10,63.96,653.25,Two year,1,51,False
+51,66.84,3420.4,One year,4,61,False
+34,68.8,2350.14,One year,3,56,True
