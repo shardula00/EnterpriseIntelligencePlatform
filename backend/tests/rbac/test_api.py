@@ -240,12 +240,13 @@ def test_roles_catalog_lists_the_three_fixed_roles(client):
     assert {r["name"] for r in response.json()} == {"ADMIN", "ANALYST", "VIEWER"}
 
 
-def test_permissions_catalog_lists_all_twenty_one_permissions(client):
+def test_permissions_catalog_lists_all_twenty_two_permissions(client):
     # 10 from Phase 4 (dataset/dashboard/user/audit) + 3 from Phase 5
     # (ml:read, ml:train, ml:predict) + 3 from Phase 6 (mlops:read,
     # mlops:evaluate, mlops:promote) + 3 from Phase 7 (rag:read,
     # rag:upload, rag:query) + 2 from Phase 8 (analytics:read,
-    # analytics:query) - see app/rbac/seed.py.
+    # analytics:query) + 1 from Phase 10 (agents:run) - see
+    # app/rbac/seed.py.
     response = client.get("/permissions")
     assert response.status_code == 200
-    assert len(response.json()) == 21
+    assert len(response.json()) == 22

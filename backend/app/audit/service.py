@@ -47,6 +47,7 @@ class AuditAction:
     RAG_QUERY_PERFORMED = "rag.query_performed"
     ANALYTICS_QUERY_PERFORMED = "analytics.query_performed"
     KG_BUILT = "kg.graph_built"
+    AGENT_RUN_PERFORMED = "agents.run_performed"
 
 
 # Case-insensitive metadata keys that are never written, no matter what a

@@ -36,6 +36,7 @@ PERMISSION_CATALOG: dict[str, str] = {
     "rag:query": "Ask questions against the enterprise knowledge assistant (RAG).",
     "analytics:read": "View past natural-language analytics query history.",
     "analytics:query": "Ask natural-language analytical questions against a dataset.",
+    "agents:run": "Run the multi-agent orchestrator against a question and optional dataset.",
 }
 
 # Deliberately explicit rather than derived: dataset:delete is ADMIN-only by
@@ -59,6 +60,7 @@ DEFAULT_ROLE_PERMISSIONS: dict[str, list[str]] = {
         "rag:query",
         "analytics:read",
         "analytics:query",
+        "agents:run",
     ],
     "ADMIN": list(PERMISSION_CATALOG.keys()),
 }

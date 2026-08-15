@@ -53,6 +53,7 @@ def test_effective_permissions_for_analyst(db_session):
         "rag:query",
         "analytics:read",
         "analytics:query",
+        "agents:run",
     }
 
 
@@ -86,6 +87,7 @@ def test_effective_permissions_is_the_union_across_multiple_roles(db_session):
         "rag:query",
         "analytics:read",
         "analytics:query",
+        "agents:run",
     }
 
 

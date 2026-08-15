@@ -3,6 +3,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.agents import router as agents_router
 from app.api.analytics import router as analytics_router
 from app.api.audit import router as audit_router
 from app.api.auth import router as auth_router
@@ -44,3 +45,4 @@ app.include_router(documents_router)
 app.include_router(rag_router)
 app.include_router(analytics_router)
 app.include_router(kg_router)
+app.include_router(agents_router)
