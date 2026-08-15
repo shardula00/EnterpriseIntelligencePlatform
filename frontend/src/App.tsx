@@ -16,6 +16,8 @@ import { MlRunsHistoryPage } from './pages/ml/MlRunsHistoryPage'
 import { ModelRegistryPage } from './pages/mlops/ModelRegistryPage'
 import { ModelVersionDetailPage } from './pages/mlops/ModelVersionDetailPage'
 import { MonitoringEventsPage } from './pages/mlops/MonitoringEventsPage'
+import { RagPage } from './pages/RagPage'
+import { AnalyticsPage } from './pages/AnalyticsPage'
 
 export default function App() {
   return (
@@ -120,6 +122,24 @@ export default function App() {
           element={
             <RequirePermission permission="mlops:read">
               <ModelVersionDetailPage />
+            </RequirePermission>
+          }
+        />
+
+        <Route
+          path="/rag"
+          element={
+            <RequirePermission permission="rag:read">
+              <RagPage />
+            </RequirePermission>
+          }
+        />
+
+        <Route
+          path="/analytics"
+          element={
+            <RequirePermission permission="analytics:read">
+              <AnalyticsPage />
             </RequirePermission>
           }
         />

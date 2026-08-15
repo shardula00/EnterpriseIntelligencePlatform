@@ -48,6 +48,11 @@ export type PermissionName =
   | 'mlops:read'
   | 'mlops:evaluate'
   | 'mlops:promote'
+  | 'rag:read'
+  | 'rag:upload'
+  | 'rag:query'
+  | 'analytics:read'
+  | 'analytics:query'
 
 // ---------------------------------------------------------------------------
 // Classical ML (Phase 5)
@@ -163,3 +168,32 @@ export type PerformanceStatus = PerformanceCheck['status']
 
 export type MonitoringEvent = components['schemas']['MonitoringEventOut']
 export type MonitoringSeverity = MonitoringEvent['severity']
+
+// ---------------------------------------------------------------------------
+// Enterprise RAG: documents, chunks, query (Phase 7)
+// ---------------------------------------------------------------------------
+
+export type DocumentSummary = components['schemas']['DocumentOut']
+export type DocumentDetail = components['schemas']['DocumentDetailOut']
+/** No standalone "DocumentType"/"DocumentStatus" schema exists - same
+ * derive-from-a-usage-site reasoning as MlTaskType/LifecycleStatus above. */
+export type DocumentType = DocumentSummary['document_type']
+export type DocumentStatus = DocumentSummary['status']
+export type DocumentChunk = components['schemas']['ChunkOut']
+
+export type RagQueryResult = components['schemas']['RagQueryOut']
+export type RagQuerySummary = components['schemas']['RagQuerySummaryOut']
+export type RagQueryStatus = RagQueryResult['status']
+export type RagSource = components['schemas']['SourceOut']
+
+// ---------------------------------------------------------------------------
+// Natural-language analytics (Phase 8)
+// ---------------------------------------------------------------------------
+
+export type AnalyticsQueryResult = components['schemas']['AnalyticsQueryOut']
+export type AnalyticsQuerySummary = components['schemas']['AnalyticsQuerySummaryOut']
+export type AnalyticsQueryStatus = AnalyticsQueryResult['status']
+/** One result row, keyed by its column name - shape genuinely varies by
+ * question (see app/analytics/query_builder.py's result_columns), so
+ * there's no fixed schema to name each field. */
+export type AnalyticsResultRow = AnalyticsQueryResult['rows'][number]

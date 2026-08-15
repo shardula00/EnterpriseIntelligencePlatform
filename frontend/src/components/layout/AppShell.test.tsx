@@ -94,6 +94,51 @@ describe('AppShell', () => {
     expect(screen.queryByRole('link', { name: 'MLOps' })).not.toBeInTheDocument()
   })
 
+  it('shows the RAG link for any authenticated user with rag:read, including a Viewer', async () => {
+    setFakeToken()
+    vi.mocked(apiClient.authMe).mockResolvedValue(
+      fakeUser({ roles: ['VIEWER'], permissions: VIEWER_PERMISSIONS }),
+    )
+
+    renderShell()
+    expect(await screen.findByRole('link', { name: 'RAG' })).toHaveAttribute('href', '/rag')
+  })
+
+  it('hides the RAG link when the user has no rag:read permission', async () => {
+    setFakeToken()
+    vi.mocked(apiClient.authMe).mockResolvedValue(
+      fakeUser({ roles: ['VIEWER'], permissions: ['dataset:read'] }),
+    )
+
+    renderShell()
+    await screen.findByRole('button', { name: /log out/i })
+    expect(screen.queryByRole('link', { name: 'RAG' })).not.toBeInTheDocument()
+  })
+
+  it('shows the Analytics link for any authenticated user with analytics:read, including a Viewer', async () => {
+    setFakeToken()
+    vi.mocked(apiClient.authMe).mockResolvedValue(
+      fakeUser({ roles: ['VIEWER'], permissions: VIEWER_PERMISSIONS }),
+    )
+
+    renderShell()
+    expect(await screen.findByRole('link', { name: 'Analytics' })).toHaveAttribute(
+      'href',
+      '/analytics',
+    )
+  })
+
+  it('hides the Analytics link when the user has no analytics:read permission', async () => {
+    setFakeToken()
+    vi.mocked(apiClient.authMe).mockResolvedValue(
+      fakeUser({ roles: ['VIEWER'], permissions: ['dataset:read'] }),
+    )
+
+    renderShell()
+    await screen.findByRole('button', { name: /log out/i })
+    expect(screen.queryByRole('link', { name: 'Analytics' })).not.toBeInTheDocument()
+  })
+
   it('logs out and returns to the login page when Log out is clicked', async () => {
     setFakeToken()
     vi.mocked(apiClient.authMe).mockResolvedValue(fakeUser())

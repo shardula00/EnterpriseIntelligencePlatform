@@ -26,8 +26,10 @@ from app.config import get_settings
 from app.db import SessionLocal
 from app.ingestion import service
 from app.main import app
+from app.models.analytics import AnalyticsQuery
 from app.models.audit import AuditLog
 from app.models.dataset import Dataset
+from app.models.document import Document, RagQuery
 from app.models.ml_run import MLRun
 from app.models.user import Role, User
 from app.rbac.seed import seed_roles_and_permissions
@@ -197,5 +199,75 @@ def _cleanup_ml_runs_created_during_test():
                 Path(run.artifact_path).unlink(missing_ok=True)
             session.delete(run)
         session.commit()
+    finally:
+        session.close()
+
+
+@pytest.fixture(autouse=True)
+def _cleanup_documents_created_during_test():
+    """Same ID-diffing pattern as datasets/ML runs - also removes each
+    document's retained raw file (best-effort, mirrors the MLRun artifact
+    cleanup) so a full test run doesn't accumulate files on disk."""
+    session: Session = SessionLocal()
+    existing_ids = set(session.execute(select(Document.id)).scalars())
+    session.close()
+
+    yield
+
+    session = SessionLocal()
+    try:
+        settings = get_settings()
+        new_docs = [
+            d for d in session.execute(select(Document)).scalars() if d.id not in existing_ids
+        ]
+        for document in new_docs:
+            if document.source_file_path:
+                (settings.rag_document_storage_dir / document.source_file_path).unlink(
+                    missing_ok=True
+                )
+            session.delete(document)
+        session.commit()
+    finally:
+        session.close()
+
+
+@pytest.fixture(autouse=True)
+def _cleanup_rag_queries_created_during_test():
+    session: Session = SessionLocal()
+    existing_ids = set(session.execute(select(RagQuery.id)).scalars())
+    session.close()
+
+    yield
+
+    session = SessionLocal()
+    try:
+        current_ids = set(session.execute(select(RagQuery.id)).scalars())
+        new_ids = current_ids - existing_ids
+        if new_ids:
+            session.execute(RagQuery.__table__.delete().where(RagQuery.id.in_(new_ids)))
+            session.commit()
+    finally:
+        session.close()
+
+
+@pytest.fixture(autouse=True)
+def _cleanup_analytics_queries_created_during_test():
+    """Same ID-diffing pattern as RAG queries above. dataset_id CASCADEs
+    (see app/models/analytics.py), so this is only load-bearing for tests
+    that query against a dataset *not* also created (and thus cleaned up)
+    within the same test."""
+    session: Session = SessionLocal()
+    existing_ids = set(session.execute(select(AnalyticsQuery.id)).scalars())
+    session.close()
+
+    yield
+
+    session = SessionLocal()
+    try:
+        current_ids = set(session.execute(select(AnalyticsQuery.id)).scalars())
+        new_ids = current_ids - existing_ids
+        if new_ids:
+            session.execute(AnalyticsQuery.__table__.delete().where(AnalyticsQuery.id.in_(new_ids)))
+            session.commit()
     finally:
         session.close()

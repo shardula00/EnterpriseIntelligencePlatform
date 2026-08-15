@@ -31,12 +31,19 @@ PERMISSION_CATALOG: dict[str, str] = {
     "mlops:read": "View the model registry, versions, drift checks, and monitoring alerts.",
     "mlops:evaluate": "Register a model version and run drift/performance monitoring checks.",
     "mlops:promote": "Promote, demote, or archive a model version.",
+    "rag:read": "View your own uploaded documents and past RAG query history.",
+    "rag:upload": "Upload, process, and delete your own documents.",
+    "rag:query": "Ask questions against the enterprise knowledge assistant (RAG).",
+    "analytics:read": "View past natural-language analytics query history.",
+    "analytics:query": "Ask natural-language analytical questions against a dataset.",
 }
 
 # Deliberately explicit rather than derived: dataset:delete is ADMIN-only by
 # design, not an accident of set-difference logic.
 DEFAULT_ROLE_PERMISSIONS: dict[str, list[str]] = {
-    "VIEWER": ["dataset:read", "dashboard:read", "ml:read", "mlops:read"],
+    "VIEWER": [
+        "dataset:read", "dashboard:read", "ml:read", "mlops:read", "rag:read", "analytics:read",
+    ],
     "ANALYST": [
         "dataset:read",
         "dataset:create",
@@ -47,6 +54,11 @@ DEFAULT_ROLE_PERMISSIONS: dict[str, list[str]] = {
         "ml:predict",
         "mlops:read",
         "mlops:evaluate",
+        "rag:read",
+        "rag:upload",
+        "rag:query",
+        "analytics:read",
+        "analytics:query",
     ],
     "ADMIN": list(PERMISSION_CATALOG.keys()),
 }

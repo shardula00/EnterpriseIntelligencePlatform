@@ -442,3 +442,98 @@ export async function listMonitoringEvents(
   })
   return unwrap(result)
 }
+
+// ---------------------------------------------------------------------------
+// Enterprise RAG: documents, chunks, query (Phase 7)
+// ---------------------------------------------------------------------------
+
+export async function uploadDocument(file: File) {
+  const result = await client.POST('/documents/upload', {
+    // Same real-body-built-by-bodySerializer pattern as uploadDataset above.
+    body: { file: file as unknown as string },
+    bodySerializer() {
+      const formData = new FormData()
+      formData.append('file', file)
+      return formData
+    },
+  })
+  return unwrap(result)
+}
+
+export async function listDocuments(status?: string) {
+  const result = await client.GET('/documents', { params: { query: { status } } })
+  return unwrap(result)
+}
+
+export async function getDocument(documentId: string) {
+  const result = await client.GET('/documents/{document_id}', {
+    params: { path: { document_id: documentId } },
+  })
+  return unwrap(result)
+}
+
+export async function processDocument(documentId: string) {
+  const result = await client.POST('/documents/{document_id}/process', {
+    params: { path: { document_id: documentId } },
+  })
+  return unwrap(result)
+}
+
+export async function deleteDocument(documentId: string) {
+  const result = await client.DELETE('/documents/{document_id}', {
+    params: { path: { document_id: documentId } },
+  })
+  if (result.error) unwrap(result)
+}
+
+export async function runRagQuery(body: {
+  question: string
+  documentIds?: string[]
+  topK?: number
+}) {
+  const result = await client.POST('/rag/query', {
+    body: {
+      question: body.question,
+      document_ids: body.documentIds ?? null,
+      top_k: body.topK ?? null,
+    },
+  })
+  return unwrap(result)
+}
+
+export async function listRagQueries() {
+  const result = await client.GET('/rag/queries')
+  return unwrap(result)
+}
+
+export async function getRagQuery(queryId: string) {
+  const result = await client.GET('/rag/queries/{query_id}', {
+    params: { path: { query_id: queryId } },
+  })
+  return unwrap(result)
+}
+
+// ---------------------------------------------------------------------------
+// Natural-language analytics (Phase 8)
+// ---------------------------------------------------------------------------
+
+export async function runAnalyticsQuery(datasetId: string, question: string) {
+  const result = await client.POST('/analytics/query', {
+    body: { dataset_id: datasetId, question },
+  })
+  return unwrap(result)
+}
+
+export async function listAnalyticsQueries(datasetId?: string) {
+  const result = await client.GET('/analytics/queries', {
+    params: { query: { dataset_id: datasetId } },
+  })
+  return unwrap(result)
+}
+
+export async function getAnalyticsQuery(queryId: string) {
+  const result = await client.GET('/analytics/queries/{query_id}', {
+    params: { path: { query_id: queryId } },
+  })
+  return unwrap(result)
+}

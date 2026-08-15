@@ -1,5 +1,7 @@
 -r requirements.txt
 
+# httpx used to be dev-only (TestClient); Phase 7 promoted it to
+# requirements.txt as a real runtime dependency, so it's no longer repeated
+# here.
 pytest==9.1.1
-httpx==0.28.1
 ruff==0.16.2

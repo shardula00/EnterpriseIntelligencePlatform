@@ -24,3 +24,15 @@ email-validator==2.3.0
 # permutation_importance already ship in scikit-learn, which avoids two
 # additional heavyweight/C-extension dependencies. See app/ml/ docstrings.
 scikit-learn==1.9.0
+
+# Enterprise RAG (Phase 7). pgvector: SQLAlchemy Vector column type + numpy
+# conversion only (no separate vector DB - see app/rag/__init__.py). pypdf/
+# python-docx: pure-Python(ish) text extraction, no heavyweight NLP/CV stack.
+# httpx: promoted from dev-only (tests) to a real runtime dependency - the
+# optional Ollama/OpenAI-compatible LLM providers make real HTTP calls.
+# No sentence-transformers/torch here on purpose - see app/rag/embeddings.py
+# for the default zero-download embedding provider and how to opt in to one.
+pgvector==0.5.0
+pypdf==6.15.0
+python-docx==1.2.0
+httpx==0.28.1

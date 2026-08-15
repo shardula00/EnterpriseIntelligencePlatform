@@ -40,6 +40,13 @@ class AuditAction:
     MODEL_VERSION_ARCHIVED = "mlops.model_version_archived"
     DRIFT_CHECK_RUN = "mlops.drift_check_run"
     PERFORMANCE_CHECK_RUN = "mlops.performance_check_run"
+    DOCUMENT_UPLOADED = "rag.document_uploaded"
+    DOCUMENT_PROCESSED = "rag.document_processed"
+    DOCUMENT_PROCESSING_FAILED = "rag.document_processing_failed"
+    DOCUMENT_DELETED = "rag.document_deleted"
+    RAG_QUERY_PERFORMED = "rag.query_performed"
+    ANALYTICS_QUERY_PERFORMED = "analytics.query_performed"
+    KG_BUILT = "kg.graph_built"
 
 
 # Case-insensitive metadata keys that are never written, no matter what a
@@ -130,7 +137,14 @@ def list_audit_logs(
     count_stmt = select(func.count()).select_from(stmt.order_by(None).subquery())
     total = db.execute(count_stmt).scalar_one()
 
-    rows = db.execute(stmt.order_by(AuditLog.created_at.desc()).limit(limit).offset(offset)).all()
+    # created_at alone isn't a reliable sort key: it's set client-side via
+    # datetime.now(), so two events recorded in quick succession (e.g. two
+    # commits in the same request/test) can tie at the clock's resolution.
+    # id is monotonically increasing with insertion order, so it's used as
+    # the tiebreaker to keep "newest first" deterministic.
+    rows = db.execute(
+        stmt.order_by(AuditLog.created_at.desc(), AuditLog.id.desc()).limit(limit).offset(offset)
+    ).all()
     entries = [
         AuditLogEntry(
             id=log.id,

@@ -8,6 +8,7 @@ without real values.
 
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -15,6 +16,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _DEFAULT_UPLOAD_STORAGE_DIR = _REPO_ROOT / "data" / "raw" / "uploads"
 _DEFAULT_ML_ARTIFACTS_DIR = _REPO_ROOT / "data" / "ml_artifacts"
+_DEFAULT_RAG_DOCUMENT_STORAGE_DIR = _REPO_ROOT / "data" / "raw" / "documents"
 
 
 class Settings(BaseSettings):
@@ -77,6 +79,59 @@ class Settings(BaseSettings):
     # sampling distribution this project doesn't have the data to estimate.
     performance_degradation_warning_threshold: float = 0.05
     performance_degradation_severe_threshold: float = 0.15
+
+    # Enterprise RAG (Phase 7). Original uploaded documents are retained here
+    # for provenance, same pattern as upload_storage_dir - never committed.
+    rag_document_storage_dir: Path = _DEFAULT_RAG_DOCUMENT_STORAGE_DIR
+    rag_max_upload_size_mb: int = 20
+
+    # Chunking. Character-based (not token-based) to avoid a tokenizer
+    # dependency; ~1000 chars is roughly 200-250 English words, a reasonable
+    # unit of "one idea" for a business document without being so large that
+    # irrelevant text dilutes a retrieved chunk. Overlap preserves context
+    # that would otherwise be cut at a chunk boundary. See app/rag/chunking.py.
+    rag_chunk_size_chars: int = 1000
+    rag_chunk_overlap_chars: int = 150
+
+    # Embeddings. "hashing" (default) needs no model download and no extra
+    # dependency beyond scikit-learn (already installed) - see
+    # app/rag/embeddings.py for exactly what it trades away vs. a real
+    # semantic model, and how to opt into "sentence_transformers" instead.
+    # The dimension is fixed at a real sentence-transformer model's own
+    # dimension (all-MiniLM-L6-v2) so switching providers later needs no
+    # migration.
+    rag_embedding_provider: str = "hashing"
+    rag_embedding_dimension: int = 384
+
+    # Retrieval. top_k and a minimum-similarity floor together decide what
+    # counts as "relevant enough to answer from" - see app/rag/retrieval.py.
+    rag_top_k: int = 5
+    rag_similarity_threshold: float = 0.15
+
+    # LLM generation. "local_extractive" (default) needs no model download,
+    # no API key, and cannot hallucinate free text by construction - it only
+    # ever quotes/selects retrieved sentences. See app/rag/llm.py for the
+    # honest tradeoff and how to opt into "ollama" or "openai_compatible".
+    rag_llm_provider: str = "local_extractive"
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_model: str = "llama3.2"
+    openai_api_key: str | None = None
+    openai_base_url: str = "https://api.openai.com/v1"
+    openai_model: str = "gpt-4o-mini"
+
+    # Natural-language analytics (Phase 8). The result-row cap is defense in
+    # depth, not a real constraint at this project's dataset scale - see
+    # app/analytics/query_builder.py.
+    analytics_max_result_rows: int = 500
+    analytics_default_top_n: int = 5
+
+    # Knowledge graph & hybrid retrieval (Phase 9). "vector_only" (default)
+    # preserves Phase 7 RAG behavior exactly - app/rag/service.py's
+    # run_query() only ever calls into app/kg/ when this is "hybrid". See
+    # app/kg/__init__.py for why this stays plain Postgres tables, never a
+    # dedicated graph database.
+    retrieval_mode: Literal["vector_only", "hybrid"] = "vector_only"
+    kg_max_facts_per_query: int = 5
 
 
 @lru_cache

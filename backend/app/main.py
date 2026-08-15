@@ -3,13 +3,17 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.analytics import router as analytics_router
 from app.api.audit import router as audit_router
 from app.api.auth import router as auth_router
 from app.api.datasets import router as datasets_router
+from app.api.documents import router as documents_router
 from app.api.health import router as health_router
+from app.api.kg import router as kg_router
 from app.api.kpis import router as kpis_router
 from app.api.ml import router as ml_router
 from app.api.mlops import router as mlops_router
+from app.api.rag import router as rag_router
 from app.api.users import catalog_router as users_catalog_router
 from app.api.users import router as users_router
 from app.config import get_settings
@@ -36,3 +40,7 @@ app.include_router(datasets_router)
 app.include_router(kpis_router)
 app.include_router(ml_router)
 app.include_router(mlops_router)
+app.include_router(documents_router)
+app.include_router(rag_router)
+app.include_router(analytics_router)
+app.include_router(kg_router)
