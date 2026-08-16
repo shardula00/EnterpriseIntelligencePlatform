@@ -195,6 +195,45 @@ npm run lint   # oxlint
 npm run build  # tsc -b && vite build
 ```
 
+## Coverage (Phase 12)
+
+```powershell
+npm run test:coverage
+```
+
+Opens as a browsable report at `coverage/index.html`. Measured and
+reported every CI run (uploaded as the `frontend-coverage` artifact); not
+gated at a hard percentage - see [../SECURITY.md](../SECURITY.md) §6 for
+the current baseline (including the two deliberately-accepted low-coverage
+areas) and why there's no fixed threshold.
+
+## Dependency audit (Phase 12)
+
+```powershell
+npm audit
+```
+
+Runs in CI too (reported, not hard-gated). See
+[../SECURITY.md](../SECURITY.md) §5 for current results, including the
+pre-existing `openapi-typescript`/`typescript` peer-range mismatch that
+isn't a vulnerability but does require `--legacy-peer-deps` on a fresh
+`npm ci`/`npm install`.
+
+## Docker (Phase 12)
+
+```powershell
+docker build -t eip-frontend -f Dockerfile .
+```
+
+Multi-stage: builds the production Vite bundle with Node, then serves it
+with nginx (`nginx.conf`) - the same image `infra/docker-compose.yml`'s
+`frontend` service builds. `VITE_API_BASE_URL` is baked in at build time
+(`ARG`/`ENV` in the Dockerfile, defaulting to `http://localhost:8000`,
+same as local `npm run dev`) since a static build has no server-side
+runtime environment. See the root
+[README.md](../README.md#running-the-full-stack-with-docker-compose) for
+bringing up the full stack. Local-only: never pushed to a registry.
+
 ## Layout
 
 ```

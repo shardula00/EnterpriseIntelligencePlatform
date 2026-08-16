@@ -1,0 +1,43 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "EcrAuth",
+      "Effect": "Allow",
+      "Action": "ecr:GetAuthorizationToken",
+      "Resource": "*"
+    },
+    {
+      "Sid": "PushEipImages",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:BatchGetImage",
+        "ecr:PutImage",
+        "ecr:InitiateLayerUpload",
+        "ecr:UploadLayerPart",
+        "ecr:CompleteLayerUpload"
+      ],
+      "Resource": [
+        "arn:aws:ecr:us-east-1:<ACCOUNT_ID>:repository/eip-backend",
+        "arn:aws:ecr:us-east-1:<ACCOUNT_ID>:repository/eip-frontend"
+      ]
+    },
+    {
+      "Sid": "RunDeployCommandOnEipInstance",
+      "Effect": "Allow",
+      "Action": "ssm:SendCommand",
+      "Resource": [
+        "arn:aws:ec2:us-east-1:<ACCOUNT_ID>:instance/<EC2_INSTANCE_ID>",
+        "arn:aws:ssm:us-east-1:<ACCOUNT_ID>:document/AWS-RunShellScript"
+      ]
+    },
+    {
+      "Sid": "ReadDeployCommandResult",
+      "Effect": "Allow",
+      "Action": ["ssm:GetCommandInvocation", "ssm:ListCommandInvocations"],
+      "Resource": "*"
+    }
+  ]
+}

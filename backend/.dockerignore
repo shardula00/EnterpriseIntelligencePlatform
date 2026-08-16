@@ -1,0 +1,30 @@
+# Keep the backend image lean and make sure nothing gitignored (secrets,
+# caches, local artifacts) ever ends up inside it - mirrors the repo root
+# .gitignore's intent for this build context specifically.
+
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Secrets - never bake a real .env into an image.
+.env
+.env.*
+!.env.example
+
+# Local artifacts (uploads, ML artifacts) if ever created inside backend/
+# during local dev - the real data/ directory lives at the repo root, so it
+# is never part of this build context to begin with.
+data/
+
+.git/
+.gitignore

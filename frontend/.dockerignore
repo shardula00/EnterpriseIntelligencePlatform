@@ -1,0 +1,19 @@
+# Keep the frontend build context small and make sure nothing gitignored
+# ends up copied into the build stage.
+
+node_modules/
+dist/
+build/
+.vite/
+*.tsbuildinfo
+npm-debug.log*
+
+coverage/
+.nyc_output/
+
+.env
+.env.*
+!.env.example
+
+.git/
+.gitignore

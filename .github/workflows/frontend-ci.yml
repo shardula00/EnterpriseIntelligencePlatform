@@ -1,0 +1,66 @@
+name: frontend-ci
+
+on:
+  push:
+    paths:
+      - "frontend/**"
+      - ".github/workflows/frontend-ci.yml"
+  pull_request:
+    paths:
+      - "frontend/**"
+      - ".github/workflows/frontend-ci.yml"
+
+defaults:
+  run:
+    working-directory: frontend
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      # --legacy-peer-deps: pre-existing peer-range mismatch between
+      # openapi-typescript's declared `typescript@^5.x` peer and this
+      # project's `typescript@~6.0.2` - see frontend/Dockerfile and
+      # SECURITY.md for the full explanation (a devDependency-only codegen
+      # tool, not a runtime compatibility issue).
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Lint (oxlint)
+        run: npm run lint
+
+      # Phase 12: coverage is measured and reported every run, not gated at
+      # a hard percentage - see SECURITY.md for why.
+      - name: Run tests with coverage
+        run: npm run test:coverage
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+
+      - name: Type-check and build
+        run: npm run build
+
+      # Phase 12: known-vulnerability scan against the resolved dependency
+      # set. Reported, not gated - see backend-ci.yml's pip-audit step and
+      # SECURITY.md for the same reasoning applied here.
+      - name: Dependency audit (npm audit)
+        continue-on-error: true
+        run: npm audit
+
+      # Phase 12: proves the frontend Docker image still builds - local
+      # `docker compose up` bring-up, not a registry push (that's Phase 13).
+      - name: Build Docker image
+        run: docker build -t eip-frontend:ci .

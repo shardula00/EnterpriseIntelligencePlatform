@@ -2,10 +2,13 @@
 #
 # Usage (run from this directory so Compose picks up infra/.env automatically):
 #   cp .env.example .env
-#   docker compose up -d
+#   docker compose up -d --build
 #
-# Phase 1 provides only Postgres+pgvector. Later phases add MLflow, and
-# eventually the backend/frontend containers themselves.
+# Phase 1 provided only Postgres+pgvector. Phase 12 adds the backend and
+# frontend containers themselves, so the entire platform starts with one
+# command from a clean checkout - see backend/Dockerfile, frontend/Dockerfile.
+# This is local-only bring-up: no registry push, no cloud services - that's
+# Phase 13.
 
 name: eip
 
@@ -28,6 +31,61 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Talks to Postgres by its Compose service name, not localhost - the
+      # two containers share the `eip` Compose network, not the host's.
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-eip_user}:${POSTGRES_PASSWORD:-eip_dev_password}@postgres:5432/${POSTGRES_DB:-eip_dev}
+      APP_ENV: ${APP_ENV:-local}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      # The browser (not the frontend container) calls the backend directly
+      # at its published host port - see frontend/src/api/client.ts and
+      # frontend/Dockerfile's VITE_API_BASE_URL. CORS must therefore allow
+      # the frontend's published origin, in addition to the existing Vite
+      # dev-server origins app/config.py already defaults to.
+      CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS:-["http://localhost:5173","http://127.0.0.1:5173","http://localhost:8080","http://127.0.0.1:8080"]}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-CHANGE-ME-THIS-IS-A-LOCAL-DEV-ONLY-DEFAULT-SECRET}
+      # Unset by default, same as backend/.env.example - scripts/
+      # bootstrap_admin.py refuses to create an admin without a real
+      # password rather than falling back to a guessable default.
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-admin@example.com}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
+      # Explicit container-filesystem paths, bind-mounted below to the same
+      # repo-root data/ directory local (non-Docker) dev already uses - so
+      # uploads/artifacts persist across `docker compose down` and stay
+      # inspectable from the host either way.
+      UPLOAD_STORAGE_DIR: /app/data/raw/uploads
+      ML_ARTIFACTS_DIR: /app/data/ml_artifacts
+      RAG_DOCUMENT_STORAGE_DIR: /app/data/raw/documents
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      - ../data:/app/data
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        # Baked into the static bundle at build time (Vite has no
+        # server-side runtime env) - the backend's host-published port,
+        # since the browser talks to the backend directly, not through this
+        # container. See frontend/Dockerfile.
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
 
 volumes:
   postgres_data:

@@ -1,0 +1,20 @@
+# Phase 13: reverse proxy + automatic HTTPS (Caddy obtains and renews free
+# Let's Encrypt certificates per domain below with zero extra config).
+#
+# ============================================================================
+# DO NOT USE THIS FILE UNTIL BOTH PLACEHOLDER DOMAINS BELOW ARE REPLACED
+# with real domains you own, AND their DNS A records point at this
+# instance's Elastic IP. Caddy will fail to obtain a certificate (and
+# HTTPS will not work) for a placeholder/unowned domain - see
+# infra/aws/README.md "Domain and HTTPS" for the exact steps. Per the
+# approved Phase 13 plan, HTTPS setup is explicitly on hold until a real
+# domain is provided.
+# ============================================================================
+
+app.REPLACE_WITH_YOUR_DOMAIN {
+	reverse_proxy frontend:80
+}
+
+api.REPLACE_WITH_YOUR_DOMAIN {
+	reverse_proxy backend:8000
+}

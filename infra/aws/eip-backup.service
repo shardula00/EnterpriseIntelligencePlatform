@@ -1,0 +1,13 @@
+# Phase 13: runs infra/aws/backup.sh once, triggered by eip-backup.timer.
+# Install: sudo cp infra/aws/eip-backup.{service,timer} /etc/systemd/system/
+#          sudo systemctl daemon-reload
+#          sudo systemctl enable --now eip-backup.timer
+[Unit]
+Description=EIP database and app-data backup
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=/opt/eip/.env.prod
+ExecStart=/opt/eip/backup.sh

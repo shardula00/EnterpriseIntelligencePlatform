@@ -85,6 +85,51 @@ CI (`.github/workflows/backend-ci.yml`) runs this same lint step, plus
 migrations and tests, against a freshly started `pgvector/pgvector:pg16`
 container on every push/PR touching `backend/`.
 
+## Coverage (Phase 12)
+
+```powershell
+.venv\Scripts\pytest --cov=app --cov-report=term-missing --cov-report=html
+```
+
+Opens as a browsable report at `htmlcov/index.html`. Measured and reported
+every CI run (uploaded as the `backend-coverage` artifact); not gated at a
+hard percentage - see [../SECURITY.md](../SECURITY.md) §6 for the current
+baseline and why there's no fixed threshold.
+
+## RBAC route coverage (Phase 12)
+
+```powershell
+.venv\Scripts\pytest tests/rbac/test_route_coverage.py -v
+```
+
+Enumerates every registered API route and fails if one is reachable with
+no auth/permission dependency and isn't on the explicit public allow-list
+in that file - see [../SECURITY.md](../SECURITY.md) §1 for the current
+result and the reasoning behind each allow-listed route.
+
+## Dependency audit (Phase 12)
+
+```powershell
+.venv\Scripts\pip-audit -r requirements.txt
+```
+
+Scans the fully resolved runtime dependency set (direct + transitive)
+against known-vulnerability databases. Runs in CI too (reported, not
+hard-gated - a disclosure in an unrelated dependency shouldn't block every
+PR before a human triages it). See [../SECURITY.md](../SECURITY.md) §5 for
+the current results and how findings are handled.
+
+## Docker (Phase 12)
+
+```powershell
+docker build -t eip-backend -f Dockerfile .
+```
+
+Builds the same image `infra/docker-compose.yml`'s `backend` service
+builds - see the root [README.md](../README.md#running-the-full-stack-with-docker-compose)
+for bringing up the full stack (Postgres + backend + frontend) with one
+command. Local-only: this is never pushed to a registry.
+
 ## Database migrations
 
 Migrations live in `migrations/versions/`, managed by Alembic. The

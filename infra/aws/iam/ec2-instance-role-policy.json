@@ -1,0 +1,32 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadEipProdParameters",
+      "Effect": "Allow",
+      "Action": ["ssm:GetParameter", "ssm:GetParametersByPath"],
+      "Resource": "arn:aws:ssm:us-east-1:<ACCOUNT_ID>:parameter/eip/prod/*"
+    },
+    {
+      "Sid": "DecryptEipProdParameters",
+      "Effect": "Allow",
+      "Action": "kms:Decrypt",
+      "Resource": "arn:aws:kms:us-east-1:<ACCOUNT_ID>:alias/aws/ssm"
+    },
+    {
+      "Sid": "EcrAuth",
+      "Effect": "Allow",
+      "Action": "ecr:GetAuthorizationToken",
+      "Resource": "*"
+    },
+    {
+      "Sid": "PullEipImages",
+      "Effect": "Allow",
+      "Action": ["ecr:BatchGetImage", "ecr:GetDownloadUrlForLayer", "ecr:BatchCheckLayerAvailability"],
+      "Resource": [
+        "arn:aws:ecr:us-east-1:<ACCOUNT_ID>:repository/eip-backend",
+        "arn:aws:ecr:us-east-1:<ACCOUNT_ID>:repository/eip-frontend"
+      ]
+    }
+  ]
+}

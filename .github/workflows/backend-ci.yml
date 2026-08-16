@@ -56,5 +56,34 @@ jobs:
       - name: Apply database migrations
         run: alembic upgrade head
 
-      - name: Run tests
-        run: pytest -v
+      # Phase 12: coverage is measured and reported every run, not gated at
+      # a hard percentage - see SECURITY.md for why. --cov-report=term
+      # prints the summary directly in the job log; the xml/html reports
+      # are uploaded as an artifact so the full per-file breakdown is
+      # inspectable without re-running anything locally.
+      - name: Run tests with coverage
+        run: pytest --cov=app --cov-report=term-missing --cov-report=xml --cov-report=html -v
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: |
+            backend/coverage.xml
+            backend/htmlcov/
+
+      # Phase 12: known-vulnerability scan against the resolved dependency
+      # set. Reported, not gated - a new CVE disclosed in an unrelated
+      # dependency shouldn't hard-fail every future PR before a human has
+      # triaged it (real vulnerabilities found here are fixed directly, per
+      # SECURITY.md's process; anything with no safe fix is documented
+      # there as an accepted risk instead of silently ignored).
+      - name: Dependency audit (pip-audit)
+        continue-on-error: true
+        run: pip-audit -r requirements.txt
+
+      # Phase 12: proves the backend Docker image still builds - local
+      # `docker compose up` bring-up, not a registry push (that's Phase 13).
+      - name: Build Docker image
+        run: docker build -t eip-backend:ci .

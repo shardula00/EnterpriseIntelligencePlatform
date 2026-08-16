@@ -19,3 +19,22 @@ ignore = ["B008"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+# Phase 12 - coverage is measured and reported (locally and in CI), not
+# gated at a hard percentage: see SECURITY.md / backend/README.md for why -
+# a numeric floor invites padding tests to hit a number rather than testing
+# what actually matters, and this project's coverage instead drives "did we
+# find a meaningful untested branch," not a CI failure condition.
+[tool.coverage.run]
+source = ["app"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "^\\s*\\.\\.\\.$",
+]

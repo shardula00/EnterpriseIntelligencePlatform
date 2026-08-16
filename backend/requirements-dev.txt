@@ -5,3 +5,11 @@
 # here.
 pytest==9.1.1
 ruff==0.16.2
+
+# Phase 12 - engineering-quality hardening. pytest-cov: coverage
+# measurement, reported but not gated at a hard percentage (see
+# pyproject.toml's [tool.coverage.*] and backend/README.md). pip-audit:
+# known-vulnerability scanning against the resolved dependency set (see
+# SECURITY.md for the process and current results).
+pytest-cov==7.1.0
+pip-audit==2.10.1

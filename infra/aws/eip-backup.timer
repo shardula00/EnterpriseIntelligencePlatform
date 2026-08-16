@@ -1,0 +1,11 @@
+# Phase 13: runs eip-backup.service once a day. See eip-backup.service for
+# install instructions.
+[Unit]
+Description=Run EIP backup daily
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=timers.target

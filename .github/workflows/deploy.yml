@@ -1,0 +1,99 @@
+name: deploy
+
+# Phase 13: manual-only production deploy - deliberately NOT triggered on
+# every push (this touches a real running system and real AWS spend).
+# Requires the one-time AWS/GitHub setup documented in infra/aws/README.md
+# (OIDC provider + deploy IAM role, ECR repos, the EC2 instance itself)
+# before this workflow can succeed - it will fail cleanly on `aws sts
+# assume-role` if that setup hasn't happened yet, not silently do nothing.
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "deploy" to confirm you want to deploy to production'
+        required: true
+
+permissions:
+  id-token: write   # required for OIDC -> AWS
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY_BACKEND: eip-backend
+  ECR_REPOSITORY_FRONTEND: eip-frontend
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.confirm == 'deploy'
+    steps:
+      - name: Reject unconfirmed run
+        if: github.event.inputs.confirm != 'deploy'
+        run: |
+          echo "Confirmation input was not 'deploy' - aborting without touching AWS."
+          exit 1
+
+      - uses: actions/checkout@v4
+
+      # No AWS access keys stored as GitHub secrets - this assumes the
+      # deploy IAM role via OIDC federation. GITHUB_DEPLOY_ROLE_ARN is a
+      # repository variable (not a secret - a role ARN is not a credential
+      # by itself), set once during infra/aws/README.md's setup.
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.GITHUB_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push backend image
+        working-directory: backend
+        run: |
+          IMAGE="${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY_BACKEND }}:${{ github.sha }}"
+          docker build -t "$IMAGE" -f Dockerfile .
+          docker push "$IMAGE"
+          docker tag "$IMAGE" "${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY_BACKEND }}:latest"
+          docker push "${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY_BACKEND }}:latest"
+
+      - name: Build and push frontend image
+        working-directory: frontend
+        run: |
+          IMAGE="${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY_FRONTEND }}:${{ github.sha }}"
+          # VITE_API_BASE_URL is baked in at build time (see frontend/Dockerfile) -
+          # the production API subdomain, not the local-dev default. Set as a
+          # repository variable once a real domain exists (see README.md);
+          # until then this intentionally has no safe default and the build
+          # step fails loudly rather than shipping a bad/placeholder URL.
+          docker build \
+            --build-arg VITE_API_BASE_URL="${{ vars.PROD_API_BASE_URL }}" \
+            -t "$IMAGE" -f Dockerfile .
+          docker push "$IMAGE"
+          docker tag "$IMAGE" "${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY_FRONTEND }}:latest"
+          docker push "${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY_FRONTEND }}:latest"
+
+      # No SSH: runs on the instance via AWS Systems Manager Run Command,
+      # authorized by the same OIDC-assumed role (see
+      # infra/aws/iam/github-deploy-role-policy.json's ssm:SendCommand
+      # statement, scoped to this one instance).
+      - name: Deploy on EC2 via SSM Run Command
+        run: |
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids "${{ vars.EC2_INSTANCE_ID }}" \
+            --document-name "AWS-RunShellScript" \
+            --parameters 'commands=["cd /opt/eip", "./fetch-secrets.sh", "docker compose --env-file .env.prod -f docker-compose.prod.yml pull", "docker compose --env-file .env.prod -f docker-compose.prod.yml up -d"]' \
+            --query "Command.CommandId" --output text)
+          echo "SSM command: $COMMAND_ID"
+          aws ssm wait command-executed \
+            --command-id "$COMMAND_ID" \
+            --instance-id "${{ vars.EC2_INSTANCE_ID }}"
+          aws ssm get-command-invocation \
+            --command-id "$COMMAND_ID" \
+            --instance-id "${{ vars.EC2_INSTANCE_ID }}"
+
+      - name: Post-deployment smoke test
+        run: |
+          APP_URL="${{ vars.PROD_APP_URL }}" API_URL="${{ vars.PROD_API_BASE_URL }}" \
+            ./infra/aws/smoke_test.sh

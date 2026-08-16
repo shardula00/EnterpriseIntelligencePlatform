@@ -1,0 +1,16 @@
+{
+  "_comment": "PLACEHOLDER - do not run `aws budgets create-budget` with this file until you replace REPLACE_WITH_YOUR_MONTHLY_LIMIT_USD below with your real monthly limit. See README.md step 10.",
+  "BudgetName": "eip-monthly",
+  "BudgetType": "COST",
+  "TimeUnit": "MONTHLY",
+  "BudgetLimit": {
+    "Amount": "REPLACE_WITH_YOUR_MONTHLY_LIMIT_USD",
+    "Unit": "USD"
+  },
+  "CostFilters": {},
+  "CostTypes": {
+    "IncludeTax": true,
+    "IncludeSubscription": true,
+    "UseBlended": false
+  }
+}
