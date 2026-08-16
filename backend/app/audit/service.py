@@ -48,6 +48,9 @@ class AuditAction:
     ANALYTICS_QUERY_PERFORMED = "analytics.query_performed"
     KG_BUILT = "kg.graph_built"
     AGENT_RUN_PERFORMED = "agents.run_performed"
+    DECISION_PROPOSED = "decision.proposed"
+    DECISION_APPROVED = "decision.approved"
+    DECISION_REJECTED = "decision.rejected"
 
 
 # Case-insensitive metadata keys that are never written, no matter what a

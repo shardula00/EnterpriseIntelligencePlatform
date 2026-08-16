@@ -139,6 +139,30 @@ describe('AppShell', () => {
     expect(screen.queryByRole('link', { name: 'Analytics' })).not.toBeInTheDocument()
   })
 
+  it('shows the Decisions link for any authenticated user with decision:read, including a Viewer', async () => {
+    setFakeToken()
+    vi.mocked(apiClient.authMe).mockResolvedValue(
+      fakeUser({ roles: ['VIEWER'], permissions: VIEWER_PERMISSIONS }),
+    )
+
+    renderShell()
+    expect(await screen.findByRole('link', { name: 'Decisions' })).toHaveAttribute(
+      'href',
+      '/decisions',
+    )
+  })
+
+  it('hides the Decisions link when the user has no decision:read permission', async () => {
+    setFakeToken()
+    vi.mocked(apiClient.authMe).mockResolvedValue(
+      fakeUser({ roles: ['VIEWER'], permissions: ['dataset:read'] }),
+    )
+
+    renderShell()
+    await screen.findByRole('button', { name: /log out/i })
+    expect(screen.queryByRole('link', { name: 'Decisions' })).not.toBeInTheDocument()
+  })
+
   it('logs out and returns to the login page when Log out is clicked', async () => {
     setFakeToken()
     vi.mocked(apiClient.authMe).mockResolvedValue(fakeUser())

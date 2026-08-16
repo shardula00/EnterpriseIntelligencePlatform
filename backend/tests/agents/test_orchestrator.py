@@ -11,6 +11,7 @@ from tests.conftest import FIXTURES_DIR, _create_user_with_role
 
 TIMESERIES_SAMPLE = (FIXTURES_DIR / "ml_sales_timeseries_sample.csv").read_bytes()
 ORDERS_SAMPLE = (FIXTURES_DIR / "orders_sample.csv").read_bytes()
+FINANCE_SAMPLE = (FIXTURES_DIR / "decision_finance_sample.csv").read_bytes()
 
 
 @pytest.fixture
@@ -28,6 +29,13 @@ def forecastable_dataset(db_session):
 @pytest.fixture
 def orders_dataset(db_session):
     return ingestion_service.ingest_upload(db_session, Settings(), "orders_sample.csv", ORDERS_SAMPLE)
+
+
+@pytest.fixture
+def finance_dataset(db_session):
+    return ingestion_service.ingest_upload(
+        db_session, Settings(), "decision_finance_sample.csv", FINANCE_SAMPLE
+    )
 
 
 def test_the_phase_10_dod_scenario_end_to_end(db_session, forecastable_dataset, analyst):
@@ -110,3 +118,51 @@ def test_permission_filtering_end_to_end_for_a_viewer(db_session, forecastable_d
     assert forecast_outcome.allowed is False  # viewer lacks ml:train
     # risk still ran (mlops:read is granted to VIEWER) but had no forecast to read.
     assert risk_outcome.outcomes[0].allowed is True
+
+
+# ---------------------------------------------------------------------------
+# Phase 11: the ML -> Risk -> Decision DoD scenario, and standalone scenario
+# ---------------------------------------------------------------------------
+
+
+def test_the_phase_11_dod_scenario_end_to_end(db_session, forecastable_dataset, analyst):
+    """'forecast next quarter's revenue and recommend an action if there's
+    a risk': router -> ml -> risk -> decision, and decision reads both
+    prior agents' own outputs (via prior_outcomes, not by re-deriving
+    anything) to produce a persisted, pending recommendation."""
+    result = run(
+        db_session, Settings(), analyst,
+        "Forecast next quarter's revenue and recommend an action if there's a risk",
+        forecastable_dataset.id,
+    )
+
+    assert result.status == "answered"
+    assert result.agents_invoked == ["ml", "risk", "decision"]
+    assert [ao.agent for ao in result.agent_outcomes] == ["ml", "risk", "decision"]
+
+    decision_outcome = result.agent_outcomes[2]
+    propose_outcome = decision_outcome.outcomes[0]
+    assert propose_outcome.tool == "propose"
+    assert propose_outcome.allowed is True
+    assert propose_outcome.data["status"] == "pending"
+    assert propose_outcome.data["confidence"] in ("low", "medium", "high")
+    assert isinstance(propose_outcome.data["assumptions"], list)
+
+
+def test_standalone_scenario_question_routes_to_decision_alone(db_session, finance_dataset, analyst):
+    """'what happens to profit if revenue decreases by 10%': router ->
+    decision only - no ML/Risk context exists in this run, so decision
+    falls back to a stateless scenario calculation, never a persisted
+    recommendation with fabricated evidence."""
+    result = run(
+        db_session, Settings(), analyst,
+        "What happens to profit if revenue decreases by 10%?",
+        finance_dataset.id,
+    )
+
+    assert result.status == "answered"
+    assert result.agents_invoked == ["decision"]
+    scenario_outcome = result.agent_outcomes[0].outcomes[0]
+    assert scenario_outcome.tool == "scenario"
+    assert scenario_outcome.data["computed"] is True
+    assert scenario_outcome.data["relationship"] == "profit = revenue - cost"

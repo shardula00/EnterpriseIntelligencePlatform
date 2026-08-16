@@ -792,10 +792,186 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/datasets/{dataset_id}/graph/build": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Build Graph */
+        post: operations["build_graph_datasets__dataset_id__graph_build_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Agents */
+        get: operations["list_agents_agents_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agents/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Run Agents */
+        post: operations["run_agents_agents_run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Recommendations */
+        get: operations["list_recommendations_decisions_get"];
+        put?: never;
+        /** Propose */
+        post: operations["propose_decisions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/decisions/scenario": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Scenario */
+        post: operations["scenario_decisions_scenario_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/decisions/{recommendation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Recommendation */
+        get: operations["get_recommendation_decisions__recommendation_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/decisions/{recommendation_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve */
+        post: operations["approve_decisions__recommendation_id__approve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/decisions/{recommendation_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject */
+        post: operations["reject_decisions__recommendation_id__reject_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AgentCatalogEntryOut */
+        AgentCatalogEntryOut: {
+            /** Name */
+            name: string;
+            /** Description */
+            description: string;
+            /** Tools */
+            tools: string[];
+        };
+        /** AgentOutcomeOut */
+        AgentOutcomeOut: {
+            /** Agent */
+            agent: string;
+            /** Outcomes */
+            outcomes: components["schemas"]["ToolOutcomeOut"][];
+        };
+        /** AgentRunRequest */
+        AgentRunRequest: {
+            /** Question */
+            question: string;
+            /** Dataset Id */
+            dataset_id?: string | null;
+        };
+        /** AgentRunResponseOut */
+        AgentRunResponseOut: {
+            /** Question */
+            question: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "answered" | "unsupported";
+            /** Agents Invoked */
+            agents_invoked: string[];
+            /** Agent Outcomes */
+            agent_outcomes: components["schemas"]["AgentOutcomeOut"][];
+            /** Summary */
+            summary: string;
+        };
         /** AnalyticsQueryOut */
         AnalyticsQueryOut: {
             /**
@@ -1460,6 +1636,20 @@ export interface components {
             /** Random Seed */
             random_seed?: number | null;
         };
+        /** GraphBuildResultOut */
+        GraphBuildResultOut: {
+            /**
+             * Dataset Id
+             * Format: uuid
+             */
+            dataset_id: string;
+            /** Entity Count */
+            entity_count: number;
+            /** Relationship Count */
+            relationship_count: number;
+            /** Entity Types */
+            entity_types: string[];
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -1864,6 +2054,100 @@ export interface components {
              */
             created_at: string;
         };
+        /** RecommendationOut */
+        RecommendationOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Dataset Id
+             * Format: uuid
+             */
+            dataset_id: string;
+            /** Question */
+            question: string;
+            /** Recommendation */
+            recommendation: string;
+            /** Alternatives */
+            alternatives: string[];
+            /** Evidence */
+            evidence: {
+                [key: string]: unknown;
+            }[];
+            /** Risks */
+            risks: {
+                [key: string]: unknown;
+            }[];
+            /** Assumptions */
+            assumptions: string[];
+            /**
+             * Confidence
+             * @enum {string}
+             */
+            confidence: "low" | "medium" | "high";
+            /** Expected Impact */
+            expected_impact: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "approved" | "rejected";
+            /** Decided By */
+            decided_by: string | null;
+            /** Decided At */
+            decided_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** RecommendationRequest */
+        RecommendationRequest: {
+            /**
+             * Dataset Id
+             * Format: uuid
+             */
+            dataset_id: string;
+            /** Question */
+            question: string;
+        };
+        /** RecommendationSummaryOut */
+        RecommendationSummaryOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Dataset Id
+             * Format: uuid
+             */
+            dataset_id: string;
+            /** Question */
+            question: string;
+            /** Recommendation */
+            recommendation: string;
+            /**
+             * Confidence
+             * @enum {string}
+             */
+            confidence: "low" | "medium" | "high";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "approved" | "rejected";
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** RegisterModelVersionRequest */
         RegisterModelVersionRequest: {
             /**
@@ -1892,6 +2176,45 @@ export interface components {
             name: string;
             /** Description */
             description: string | null;
+        };
+        /** ScenarioRequest */
+        ScenarioRequest: {
+            /**
+             * Dataset Id
+             * Format: uuid
+             */
+            dataset_id: string;
+            /** Question */
+            question: string;
+        };
+        /** ScenarioResultOut */
+        ScenarioResultOut: {
+            /** Computed */
+            computed: boolean;
+            /** Question */
+            question: string;
+            /** Affected Metric */
+            affected_metric?: string | null;
+            /** Perturbed Metric */
+            perturbed_metric?: string | null;
+            /** Delta Percent */
+            delta_percent?: number | null;
+            /** Baseline Perturbed Value */
+            baseline_perturbed_value?: number | null;
+            /** Baseline Affected Value */
+            baseline_affected_value?: number | null;
+            /** New Perturbed Value */
+            new_perturbed_value?: number | null;
+            /** New Affected Value */
+            new_affected_value?: number | null;
+            /** Affected Value Change */
+            affected_value_change?: number | null;
+            /** Relationship */
+            relationship?: string | null;
+            /** Note */
+            note?: string | null;
+            /** Reason */
+            reason?: string | null;
         };
         /** SegmentationPredictionOut */
         SegmentationPredictionOut: {
@@ -1999,6 +2322,19 @@ export interface components {
              * @default bearer
              */
             token_type: string;
+        };
+        /** ToolOutcomeOut */
+        ToolOutcomeOut: {
+            /** Tool */
+            tool: string;
+            /** Allowed */
+            allowed: boolean;
+            /** Summary */
+            summary: string;
+            /** Data */
+            data?: {
+                [key: string]: unknown;
+            } | null;
         };
         /** TrendOut */
         TrendOut: {
@@ -3701,6 +4037,280 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AnalyticsQueryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    build_graph_datasets__dataset_id__graph_build_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dataset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GraphBuildResultOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_agents_agents_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentCatalogEntryOut"][];
+                };
+            };
+        };
+    };
+    run_agents_agents_run_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentRunRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentRunResponseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_recommendations_decisions_get: {
+        parameters: {
+            query?: {
+                dataset_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecommendationSummaryOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    propose_decisions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecommendationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecommendationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    scenario_decisions_scenario_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScenarioRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScenarioResultOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_recommendation_decisions__recommendation_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recommendation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecommendationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    approve_decisions__recommendation_id__approve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recommendation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecommendationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reject_decisions__recommendation_id__reject_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recommendation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecommendationOut"];
                 };
             };
             /** @description Validation Error */

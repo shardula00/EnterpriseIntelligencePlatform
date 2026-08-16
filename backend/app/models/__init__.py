@@ -8,6 +8,7 @@ from app.models.analytics import AnalyticsQuery
 from app.models.app_metadata import AppMetadata
 from app.models.audit import AuditLog
 from app.models.dataset import Dataset, DatasetColumn, DatasetLineageEvent, DatasetQualityIssue
+from app.models.decision import Recommendation
 from app.models.document import Document, DocumentChunk, RagQuery
 from app.models.kg import Entity, Relationship
 from app.models.ml_run import MLRun
@@ -31,6 +32,7 @@ __all__ = [
     "MonitoringEvent",
     "Permission",
     "RagQuery",
+    "Recommendation",
     "Relationship",
     "Role",
     "RolePermission",

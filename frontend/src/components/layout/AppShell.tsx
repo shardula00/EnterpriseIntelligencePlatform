@@ -11,6 +11,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const canViewMlOps = usePermission('mlops:read')
   const canViewRag = usePermission('rag:read')
   const canViewAnalytics = usePermission('analytics:read')
+  const canViewDecisions = usePermission('decision:read')
   const navigate = useNavigate()
 
   async function handleLogout() {
@@ -50,6 +51,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                 {canViewAnalytics && (
                   <Link to="/analytics" className="hover:text-accent-600">
                     Analytics
+                  </Link>
+                )}
+                {canViewDecisions && (
+                  <Link to="/decisions" className="hover:text-accent-600">
+                    Decisions
                   </Link>
                 )}
                 {canManageUsers && (

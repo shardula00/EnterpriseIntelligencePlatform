@@ -37,6 +37,9 @@ PERMISSION_CATALOG: dict[str, str] = {
     "analytics:read": "View past natural-language analytics query history.",
     "analytics:query": "Ask natural-language analytical questions against a dataset.",
     "agents:run": "Run the multi-agent orchestrator against a question and optional dataset.",
+    "decision:read": "View past recommendations.",
+    "decision:propose": "Generate a recommendation or run a what-if scenario for a dataset.",
+    "decision:approve": "Approve or reject a pending recommendation.",
 }
 
 # Deliberately explicit rather than derived: dataset:delete is ADMIN-only by
@@ -44,6 +47,7 @@ PERMISSION_CATALOG: dict[str, str] = {
 DEFAULT_ROLE_PERMISSIONS: dict[str, list[str]] = {
     "VIEWER": [
         "dataset:read", "dashboard:read", "ml:read", "mlops:read", "rag:read", "analytics:read",
+        "decision:read",
     ],
     "ANALYST": [
         "dataset:read",
@@ -61,6 +65,8 @@ DEFAULT_ROLE_PERMISSIONS: dict[str, list[str]] = {
         "analytics:read",
         "analytics:query",
         "agents:run",
+        "decision:read",
+        "decision:propose",
     ],
     "ADMIN": list(PERMISSION_CATALOG.keys()),
 }

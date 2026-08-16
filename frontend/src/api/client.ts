@@ -537,3 +537,49 @@ export async function getAnalyticsQuery(queryId: string) {
   })
   return unwrap(result)
 }
+
+// ---------------------------------------------------------------------------
+// Decision Intelligence (Phase 11)
+// ---------------------------------------------------------------------------
+
+export async function proposeRecommendation(datasetId: string, question: string) {
+  const result = await client.POST('/decisions', {
+    body: { dataset_id: datasetId, question },
+  })
+  return unwrap(result)
+}
+
+export async function runScenario(datasetId: string, question: string) {
+  const result = await client.POST('/decisions/scenario', {
+    body: { dataset_id: datasetId, question },
+  })
+  return unwrap(result)
+}
+
+export async function listRecommendations(datasetId?: string) {
+  const result = await client.GET('/decisions', {
+    params: { query: { dataset_id: datasetId } },
+  })
+  return unwrap(result)
+}
+
+export async function getRecommendation(recommendationId: string) {
+  const result = await client.GET('/decisions/{recommendation_id}', {
+    params: { path: { recommendation_id: recommendationId } },
+  })
+  return unwrap(result)
+}
+
+export async function approveRecommendation(recommendationId: string) {
+  const result = await client.POST('/decisions/{recommendation_id}/approve', {
+    params: { path: { recommendation_id: recommendationId } },
+  })
+  return unwrap(result)
+}
+
+export async function rejectRecommendation(recommendationId: string) {
+  const result = await client.POST('/decisions/{recommendation_id}/reject', {
+    params: { path: { recommendation_id: recommendationId } },
+  })
+  return unwrap(result)
+}

@@ -18,6 +18,7 @@ import { ModelVersionDetailPage } from './pages/mlops/ModelVersionDetailPage'
 import { MonitoringEventsPage } from './pages/mlops/MonitoringEventsPage'
 import { RagPage } from './pages/RagPage'
 import { AnalyticsPage } from './pages/AnalyticsPage'
+import { DecisionsPage } from './pages/DecisionsPage'
 
 export default function App() {
   return (
@@ -140,6 +141,15 @@ export default function App() {
           element={
             <RequirePermission permission="analytics:read">
               <AnalyticsPage />
+            </RequirePermission>
+          }
+        />
+
+        <Route
+          path="/decisions"
+          element={
+            <RequirePermission permission="decision:read">
+              <DecisionsPage />
             </RequirePermission>
           }
         />

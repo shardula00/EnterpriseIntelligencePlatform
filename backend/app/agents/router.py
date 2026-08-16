@@ -13,6 +13,16 @@ factors") - Analytics/Data/Research are mutually-exclusive fallbacks,
 checked only when neither ML nor Risk matched, in a fixed priority order.
 This is a deliberately simple v1 scope, not a general multi-domain planner
 - see app/agents/__init__.py.
+
+Phase 11: Decision keywords are checked *additionally*, never replacing
+the above. If ML and/or Risk also matched, "decision" is appended after
+them (the Phase 11 DoD scenario: "forecast ... and recommend an action if
+there's a risk" -> ["ml", "risk", "decision"], so decision_agent can read
+their already-produced output). If nothing else matched but decision
+keywords did, the plan is ["decision"] alone (the Phase 11 what-if DoD
+scenario: "what happens to profit if revenue decreases by 10%" has no
+ml/risk/analytics keyword in it at all) - decision_agent then falls back
+to a standalone scenario calculation. See app/agents/decision_agent.py.
 """
 
 _ML_KEYWORDS = (
@@ -21,6 +31,10 @@ _ML_KEYWORDS = (
     "suitable for",
 )
 _RISK_KEYWORDS = ("risk", "flag", "alert", "warning sign", "concern")
+_DECISION_KEYWORDS = (
+    "recommend", "recommendation", "should we", "what should", "decide", "decision",
+    "what happens if", "what happens to", "what if",
+)
 _ANALYTICS_KEYWORDS = (
     "total", "sum of", "average", "how many", "breakdown", "top ", "trend",
     "monthly", "weekly", "by region", "by category", "by product",
@@ -34,7 +48,7 @@ _RESEARCH_KEYWORDS = (
     "according to",
 )
 
-AGENT_NAMES = ("data", "analytics", "ml", "research", "risk")
+AGENT_NAMES = ("data", "analytics", "ml", "research", "risk", "decision")
 
 
 def route(question: str) -> list[str]:
@@ -44,6 +58,7 @@ def route(question: str) -> list[str]:
 
     ml_match = any(keyword in lowered for keyword in _ML_KEYWORDS)
     risk_match = any(keyword in lowered for keyword in _RISK_KEYWORDS)
+    decision_match = any(keyword in lowered for keyword in _DECISION_KEYWORDS)
 
     plan: list[str] = []
     if ml_match:
@@ -51,8 +66,12 @@ def route(question: str) -> list[str]:
     if risk_match:
         plan.append("risk")
     if plan:
+        if decision_match:
+            plan.append("decision")
         return plan
 
+    if decision_match:
+        return ["decision"]
     if any(keyword in lowered for keyword in _ANALYTICS_KEYWORDS):
         return ["analytics"]
     if any(keyword in lowered for keyword in _DATA_KEYWORDS):

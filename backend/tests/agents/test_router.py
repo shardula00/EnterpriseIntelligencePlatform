@@ -56,3 +56,35 @@ def test_ml_keywords_take_priority_over_analytics_keywords():
     # documented fixed priority order.
     plan = route("predict the total revenue trend")
     assert plan == ["ml"]
+
+
+# ---------------------------------------------------------------------------
+# Phase 11: decision routing (additive - must not change any of the above)
+# ---------------------------------------------------------------------------
+
+
+def test_the_phase_11_dod_scenario_routes_to_ml_risk_then_decision():
+    plan = route("Forecast next quarter's revenue and recommend an action if there's a risk")
+    assert plan == ["ml", "risk", "decision"]
+
+
+def test_standalone_what_if_question_routes_to_decision_only():
+    plan = route("What happens to profit if revenue decreases by 10%?")
+    assert plan == ["decision"]
+
+
+def test_recommend_alone_with_no_ml_or_risk_keyword_routes_to_decision_only():
+    plan = route("What should we do about this dataset?")
+    assert plan == ["decision"]
+
+
+def test_decision_is_appended_after_risk_alone_when_both_match():
+    plan = route("Are there any risk factors, and what should we do about them?")
+    assert plan == ["risk", "decision"]
+
+
+def test_the_phase_10_dod_scenario_still_has_no_decision_agent():
+    # Regression: this exact Phase 10 question has no decision keyword in
+    # it and must route exactly as it did before Phase 11 existed.
+    plan = route("Forecast next quarter's revenue and flag any risk factors.")
+    assert plan == ["ml", "risk"]

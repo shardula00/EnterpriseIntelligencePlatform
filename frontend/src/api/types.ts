@@ -53,6 +53,9 @@ export type PermissionName =
   | 'rag:query'
   | 'analytics:read'
   | 'analytics:query'
+  | 'decision:read'
+  | 'decision:propose'
+  | 'decision:approve'
 
 // ---------------------------------------------------------------------------
 // Classical ML (Phase 5)
@@ -197,3 +200,18 @@ export type AnalyticsQueryStatus = AnalyticsQueryResult['status']
  * question (see app/analytics/query_builder.py's result_columns), so
  * there's no fixed schema to name each field. */
 export type AnalyticsResultRow = AnalyticsQueryResult['rows'][number]
+
+// ---------------------------------------------------------------------------
+// Decision Intelligence (Phase 11)
+// ---------------------------------------------------------------------------
+
+export type Recommendation = components['schemas']['RecommendationOut']
+export type RecommendationSummary = components['schemas']['RecommendationSummaryOut']
+export type RecommendationStatus = Recommendation['status']
+export type Confidence = Recommendation['confidence']
+export type ScenarioResult = components['schemas']['ScenarioResultOut']
+/** Evidence/risk items are keyed dicts whose shape genuinely varies by
+ * originating agent/tool (see app/decision/service.py) - same reasoning
+ * as AnalyticsResultRow above. */
+export type EvidenceItem = Recommendation['evidence'][number]
+export type RiskFlagItem = Recommendation['risks'][number]

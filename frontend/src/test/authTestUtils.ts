@@ -25,10 +25,14 @@ export const ALL_PERMISSIONS: PermissionName[] = [
   'rag:query',
   'analytics:read',
   'analytics:query',
+  'decision:read',
+  'decision:propose',
+  'decision:approve',
 ]
 
 export const VIEWER_PERMISSIONS: PermissionName[] = [
   'dataset:read', 'dashboard:read', 'ml:read', 'mlops:read', 'rag:read', 'analytics:read',
+  'decision:read',
 ]
 
 export const ANALYST_PERMISSIONS: PermissionName[] = [
@@ -46,6 +50,8 @@ export const ANALYST_PERMISSIONS: PermissionName[] = [
   'rag:query',
   'analytics:read',
   'analytics:query',
+  'decision:read',
+  'decision:propose',
 ]
 
 export function fakeUser(overrides: Partial<CurrentUser> = {}): CurrentUser {

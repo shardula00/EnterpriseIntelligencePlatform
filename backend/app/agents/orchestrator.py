@@ -6,6 +6,12 @@ one plan, so a later agent can use an earlier one's output (today, just
 ml_agent writing context["ml_run_id"] for risk_agent to read) without the
 agents importing each other or the orchestrator needing to know each
 agent's internal result shape.
+
+Phase 11: the growing `agent_outcomes` list (every agent's result *so
+far* in this same run) is also passed to decision_agent, since Decision
+needs to read what ML/Risk already produced (not just a single id) without
+ml_agent.py/risk_agent.py needing to change to write anything new to
+`context` themselves - see app/agents/decision_agent.py.
 """
 
 import uuid
@@ -13,7 +19,7 @@ from dataclasses import dataclass, field
 
 from sqlalchemy.orm import Session
 
-from app.agents import analytics_agent, data_agent, ml_agent, research_agent, risk_agent
+from app.agents import analytics_agent, data_agent, decision_agent, ml_agent, research_agent, risk_agent
 from app.agents.base import AgentOutcome
 from app.agents.router import route
 from app.config import Settings
@@ -43,6 +49,7 @@ def _run_agent(
     question: str,
     dataset_id: uuid.UUID | None,
     context: dict,
+    prior_outcomes: list[AgentOutcome],
 ) -> AgentOutcome:
     if name == "data":
         return data_agent.run(db, user, dataset_id)
@@ -54,6 +61,8 @@ def _run_agent(
         return research_agent.run(db, settings, user, question)
     if name == "risk":
         return risk_agent.run(db, user, dataset_id, context)
+    if name == "decision":
+        return decision_agent.run(db, settings, user, question, dataset_id, prior_outcomes)
     raise ValueError(f"Unknown agent '{name}'")  # pragma: no cover - route() only emits known names
 
 
@@ -81,9 +90,10 @@ def run(
         )
 
     context: dict = {}
-    agent_outcomes = [
-        _run_agent(name, db, settings, user, question, dataset_id, context) for name in plan
-    ]
+    agent_outcomes: list[AgentOutcome] = []
+    for name in plan:
+        outcome = _run_agent(name, db, settings, user, question, dataset_id, context, agent_outcomes)
+        agent_outcomes.append(outcome)
 
     return OrchestrationResult(
         question=question,

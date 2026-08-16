@@ -33,6 +33,7 @@ def test_effective_permissions_for_viewer(db_session):
     user = _make_user(db_session, ["VIEWER"])
     assert service.effective_permissions(user) == {
         "dataset:read", "dashboard:read", "ml:read", "mlops:read", "rag:read", "analytics:read",
+        "decision:read",
     }
 
 
@@ -54,6 +55,8 @@ def test_effective_permissions_for_analyst(db_session):
         "analytics:read",
         "analytics:query",
         "agents:run",
+        "decision:read",
+        "decision:propose",
     }
 
 
@@ -88,6 +91,8 @@ def test_effective_permissions_is_the_union_across_multiple_roles(db_session):
         "analytics:read",
         "analytics:query",
         "agents:run",
+        "decision:read",
+        "decision:propose",
     }
 
 
