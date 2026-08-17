@@ -6,10 +6,8 @@ import { DatasetList } from '../components/datasets/DatasetList'
 import { LoadingSpinner } from '../components/common/LoadingSpinner'
 import { ErrorMessage } from '../components/common/ErrorMessage'
 import { useAsync } from '../hooks/useAsync'
-import { usePermission } from '../hooks/usePermission'
 
 export function DatasetsPage() {
-  const canCreateDataset = usePermission('dataset:create')
   const [refreshKey, setRefreshKey] = useState(0)
   const result = useAsync(() => listDatasets(), [refreshKey])
   const [pendingDelete, setPendingDelete] = useState<DatasetSummary | null>(null)
@@ -33,9 +31,7 @@ export function DatasetsPage() {
         </p>
       </div>
 
-      {canCreateDataset && (
-        <UploadDropzone onUploaded={() => setRefreshKey((k) => k + 1)} />
-      )}
+      <UploadDropzone onUploaded={() => setRefreshKey((k) => k + 1)} />
 
       {result.status === 'loading' && <LoadingSpinner label="Loading datasets…" />}
       {result.status === 'error' && <ErrorMessage message={result.error} onRetry={result.reload} />}
@@ -46,4 +42,3 @@ export function DatasetsPage() {
     </div>
   )
 }
-
